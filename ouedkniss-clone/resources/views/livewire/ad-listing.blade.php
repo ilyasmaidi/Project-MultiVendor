@@ -1,133 +1,59 @@
-@extends('layouts.app')
-
-@section('title', 'الإعلانات')
-
-@section('content')
-<div class="container mx-auto px-4 py-8">
-    <div class="flex flex-col lg:flex-row gap-8">
-        <!-- Filters Sidebar -->
-        <div class="lg:w-1/4">
-            <div class="bg-white rounded-lg shadow-md p-6 sticky top-20">
-                <h3 class="font-bold text-lg mb-4">تصفية النتائج</h3>
-
-                <!-- Search -->
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">البحث</label>
-                    <input type="text" wire:model.live="search"
-                           class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
-                           placeholder="بحث في الإعلانات...">
-                </div>
-
-                <!-- Category Filter -->
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">الفئة</label>
-                    <select wire:model.live="category"
-                            class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500">
-                        <option value="">جميع الفئات</option>
-                        @foreach($categories as $cat)
-                            <option value="{{ $cat->slug }}">{{ $cat->name }}</option>
-                            @foreach($cat->children as $child)
-                                <option value="{{ $child->slug }}">— {{ $child->name }}</option>
-                            @endforeach
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Price Range -->
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">نطاق السعر</label>
-                    <div class="flex gap-2">
-                        <input type="number" wire:model.live="minPrice" placeholder="من"
-                               class="w-1/2 border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500">
-                        <input type="number" wire:model.live="maxPrice" placeholder="إلى"
-                               class="w-1/2 border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500">
-                    </div>
-                </div>
-
-                <!-- City Filter -->
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">المدينة</label>
-                    <input type="text" wire:model.live="city"
-                           class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
-                           placeholder="المدينة">
-                </div>
-
-                <!-- Condition Filter -->
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">الحالة</label>
-                    <select wire:model.live="condition"
-                            class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500">
-                        <option value="">الكل</option>
-                        <option value="new">جديد</option>
-                        <option value="used">مستعمل</option>
-                        <option value="refurbished">مجدد</option>
-                    </select>
-                </div>
-
-                <!-- Sort -->
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">الترتيب</label>
-                    <select wire:model.live="sortBy"
-                            class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500">
-                        <option value="latest">الأحدث</option>
-                        <option value="oldest">الأقدم</option>
-                        <option value="price_asc">السعر: من الأقل</option>
-                        <option value="price_desc">السعر: من الأعلى</option>
-                    </select>
-                </div>
+<div class="min-h-screen bg-gradient-subtle py-12">
+    <div class="container mx-auto px-4 lg:px-8">
+        
+        <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+            <div>
+                <span class="text-emerald-500 font-black tracking-[0.3em] text-xs block uppercase mb-2">Global Marketplace</span>
+                <h1 class="heavy-title text-6xl text-white uppercase italic">Luxury <span class="text-emerald-500">Ads</span></h1>
+            </div>
+            
+            <div class="flex gap-4 w-full md:w-auto">
+                <input wire:model.live.debounce.500ms="search" type="text" placeholder="ابحث عن قطعة محددة..." 
+                       class="bg-white/5 border border-white/10 px-6 py-3 rounded-full text-sm w-full md:w-80 outline-none focus:border-emerald-500 text-white">
+                
+                <select wire:model.live="sortBy" class="bg-zinc-900 border border-white/10 text-white text-[10px] font-black px-6 py-3 rounded-full outline-none uppercase cursor-pointer hover:border-emerald-500 transition-all">
+                    <option value="latest">الأحدث</option>
+                    <option value="price_asc">الأقل سعراً</option>
+                    <option value="price_desc">الأعلى سعراً</option>
+                </select>
             </div>
         </div>
 
-        <!-- Ads Grid -->
-        <div class="lg:w-3/4">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">الإعلانات</h2>
-                <span class="text-gray-500">{{ $ads->total() }} إعلان</span>
-            </div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <aside class="lg:col-span-3 space-y-8">
+                <div class="bg-white/[0.02] border border-white/5 p-8 rounded-3xl">
+                    <h3 class="text-white font-black text-sm uppercase tracking-widest mb-6 pb-4 border-b border-white/5">الأقسام</h3>
+                    <ul class="space-y-4">
+                        <li>
+                            <button wire:click="$set('category', null)" class="text-sm font-bold uppercase {{ is_null($category) ? 'text-emerald-500' : 'text-gray-500 hover:text-white' }}">كل القطع</button>
+                        </li>
+                        @foreach($categories as $cat)
+                            <li>
+                                <button wire:click="$set('category', '{{ $cat->slug }}')" 
+                                        class="text-sm font-bold uppercase {{ $category == $cat->slug ? 'text-emerald-500' : 'text-gray-500 hover:text-white' }}">
+                                    {{ $cat->name }}
+                                </button>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            </aside>
 
-            @if($ads->count() > 0)
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    @foreach($ads as $ad)
-                        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                            <div class="relative h-48">
-                                @if($ad->images->count() > 0)
-                                    <img src="{{ asset('storage/' . $ad->images->first()->image_path) }}"
-                                         alt="{{ $ad->title }}" class="w-full h-full object-cover">
-                                @else
-                                    <div class="w-full h-full bg-gray-200 flex items-center justify-center">
-                                        <i class="fas fa-image text-gray-400 text-4xl"></i>
-                                    </div>
-                                @endif
-                                @if($ad->is_featured)
-                                    <span class="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold">مميز</span>
-                                @endif
-                            </div>
-                            <div class="p-4">
-                                <h3 class="font-bold text-lg mb-2 truncate">{{ $ad->title }}</h3>
-                                <p class="text-red-600 font-bold">{{ number_format($ad->price, 0) }} د.ج</p>
-                                <div class="flex justify-between items-center mt-2 text-sm text-gray-500">
-                                    <span><i class="fas fa-map-marker-alt"></i> {{ $ad->city }}</span>
-                                    <span>{{ $ad->created_at->diffForHumans() }}</span>
-                                </div>
-                                <a href="{{ route('ads.show', $ad->slug) }}" class="mt-3 block text-center bg-gray-100 text-gray-700 py-2 rounded hover:bg-gray-200">
-                                    عرض التفاصيل
-                                </a>
-                            </div>
+            <main class="lg:col-span-9">
+                <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                    @forelse($ads as $ad)
+                        <livewire:ad-card :ad="$ad" :key="'ad-'.$ad->id" />
+                    @empty
+                        <div class="col-span-full py-40 text-center border-2 border-dashed border-white/5 rounded-3xl">
+                            <p class="text-gray-600 font-black uppercase tracking-[0.5em]">No items found matching your search</p>
                         </div>
-                    @endforeach
+                    @endforelse
                 </div>
 
-                <div class="mt-8">
+                <div class="mt-20 flex justify-center">
                     {{ $ads->links() }}
                 </div>
-            @else
-                <div class="text-center py-12">
-                    <i class="fas fa-search text-gray-400 text-6xl mb-4"></i>
-                    <h3 class="text-xl font-bold text-gray-600 mb-2">لا توجد نتائج</h3>
-                    <p class="text-gray-500">جرب تغيير معايير البحث</p>
-                </div>
-            @endif
+            </main>
         </div>
     </div>
 </div>
-@endsection

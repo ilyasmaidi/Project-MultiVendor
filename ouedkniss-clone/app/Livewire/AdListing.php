@@ -19,6 +19,7 @@ class AdListing extends Component
     public $condition = null;
     public $sortBy = 'latest';
 
+    // تحسين مراقبة المتغيرات لإعادة الترقيم عند التغيير
     protected $queryString = [
         'search' => ['except' => ''],
         'category' => ['except' => null],
@@ -29,10 +30,9 @@ class AdListing extends Component
         'sortBy' => ['except' => 'latest'],
     ];
 
-    public function updatingSearch()
-    {
-        $this->resetPage();
-    }
+    // إعادة ضبط الترقيم عند كتابة أي بحث جديد لضمان ظهور النتائج من الصفحة الأولى
+    public function updatingSearch() { $this->resetPage(); }
+    public function updatingCategory() { $this->resetPage(); }
 
     public function render()
     {
@@ -51,12 +51,13 @@ class AdListing extends Component
             default => $query->latest(),
         };
 
-        $ads = $query->with(['category', 'user', 'images'])->paginate(20);
+        // تم التعديل إلى 30 منتجاً مبدئياً
+        $ads = $query->with(['category', 'user', 'images'])->paginate(30);
         $categories = Category::root()->active()->menu()->get();
 
         return view('livewire.ad-listing', [
             'ads' => $ads,
             'categories' => $categories,
-        ])->layout('layouts.app');
+        ])->layout('layouts.main');
     }
 }

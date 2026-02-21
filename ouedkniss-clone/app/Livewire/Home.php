@@ -19,6 +19,6 @@ class Home extends Component
             'featuredAds' => $featuredAds,
             'recentAds' => $recentAds,
             'categories' => $categories,
-        ])->layout('layouts.app');
+        ])->layout('layouts.main');
     }
 }

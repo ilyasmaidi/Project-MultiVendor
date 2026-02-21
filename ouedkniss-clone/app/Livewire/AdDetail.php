@@ -26,6 +26,6 @@ class AdDetail extends Component
             $template = 'ads.show-general';
         }
 
-        return view($template, ['ad' => $this->ad])->layout('layouts.app');
+        return view($template, ['ad' => $this->ad])->layout('layouts.main');
     }
 }

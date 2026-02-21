@@ -101,7 +101,7 @@
                 </div>
                 
                 @auth
-                    <a href="{{ route('store.dashboard') }}" class="text-xl hover:text-emerald-500 transition-colors" title="لوحة التحكم">
+                    <a href="{{ route('vendor.dashboard') }}" class="text-xl hover:text-emerald-500 transition-colors" title="لوحة التحكم">
                         <i class="fa-solid fa-chart-line"></i>
                     </a>
                     <a href="{{ route('profile') }}" class="text-xl hover:text-emerald-500 transition-colors">
@@ -193,7 +193,7 @@
                     @auth
                         <li><a href="{{ route('my-ads') }}" class="hover:text-emerald-400 transition-colors">إعلاناتي</a></li>
                         <li><a href="{{ route('profile') }}" class="hover:text-emerald-400 transition-colors">إعدادات الحساب</a></li>
-                        <li><a href="{{ route('store.dashboard') }}" class="hover:text-emerald-400 transition-colors">لوحة التاجر</a></li>
+                        <li><a href="{{ route('vendor.dashboard') }}" class="hover:text-emerald-400 transition-colors">لوحة التاجر</a></li>
                     @else
                         <li><a href="{{ route('login') }}" class="hover:text-emerald-400 transition-colors">تسجيل الدخول</a></li>
                         <li><a href="{{ route('register') }}" class="hover:text-emerald-400 transition-colors">فتح متجر</a></li>

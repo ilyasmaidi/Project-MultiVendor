@@ -26,6 +26,7 @@ class User extends Authenticatable
         'phone',
         'whatsapp',
         'address',
+        'bio',
         'avatar',
         'role',
         'is_active',
@@ -75,6 +76,11 @@ class User extends Authenticatable
     public function staffInvitations(): HasMany
     {
         return $this->hasMany(StaffInvitation::class, 'invited_by');
+    }
+
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(Favorite::class);
     }
 
     public function isAdmin(): bool

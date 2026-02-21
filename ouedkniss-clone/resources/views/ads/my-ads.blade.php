@@ -1,41 +1,40 @@
-@extends('layouts.app')
+@extends('layouts.main')
 
 @section('title', 'إعلاناتي')
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-8">إعلاناتي</h1>
-
-    <div class="flex gap-4 mb-6">
-        <a href="{{ route('ads.create') }}" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">
-            <i class="fas fa-plus ml-2"></i> إضافة إعلان جديد
+    <div class="flex items-center justify-between mb-8">
+        <h1 class="text-3xl font-black">إعلاناتي</h1>
+        <a href="{{ route('ads.create') }}" class="btn-premium px-6 py-3 rounded-xl">
+            <i class="fa-solid fa-plus ml-2"></i> إضافة إعلان جديد
         </a>
     </div>
 
     @if($ads->count() > 0)
-        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="card overflow-hidden">
             <table class="w-full">
-                <thead class="bg-gray-100">
+                <thead class="bg-white/5">
                     <tr>
-                        <th class="px-4 py-3 text-right">الإعلان</th>
-                        <th class="px-4 py-3 text-right">السعر</th>
-                        <th class="px-4 py-3 text-right">الحالة</th>
-                        <th class="px-4 py-3 text-right">المشاهدات</th>
-                        <th class="px-4 py-3 text-right">التاريخ</th>
-                        <th class="px-4 py-3 text-right">الإجراءات</th>
+                        <th class="px-4 py-4 text-right font-bold">الإعلان</th>
+                        <th class="px-4 py-4 text-right font-bold">السعر</th>
+                        <th class="px-4 py-4 text-right font-bold">الحالة</th>
+                        <th class="px-4 py-4 text-right font-bold">المشاهدات</th>
+                        <th class="px-4 py-4 text-right font-bold">التاريخ</th>
+                        <th class="px-4 py-4 text-right font-bold">الإجراءات</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-white/5">
                     @foreach($ads as $ad)
-                        <tr class="border-b">
-                            <td class="px-4 py-3">
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <td class="px-4 py-4">
                                 <div class="flex items-center gap-3">
                                     @if($ad->images->count() > 0)
                                         <img src="{{ asset('storage/' . $ad->images->first()->image_path) }}" 
-                                             alt="" class="w-12 h-12 object-cover rounded">
+                                             alt="" class="w-12 h-12 object-cover rounded-lg">
                                     @else
-                                        <div class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
-                                            <i class="fas fa-image text-gray-400"></i>
+                                        <div class="w-12 h-12 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                                            <i class="fa-solid fa-image text-emerald-400"></i>
                                         </div>
                                     @endif
                                     <div>
@@ -44,31 +43,27 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-3">{{ number_format($ad->price, 0) }} د.ج</td>
-                            <td class="px-4 py-3">
-                                <span class="px-2 py-1 rounded text-sm font-medium
-                                    @if($ad->status == 'active') bg-green-100 text-green-800
-                                    @elseif($ad->status == 'pending') bg-yellow-100 text-yellow-800
-                                    @elseif($ad->status == 'rejected') bg-red-100 text-red-800
-                                    @else bg-gray-100 text-gray-800 @endif">
+                            <td class="px-4 py-4 text-emerald-400 font-bold">{{ number_format($ad->price, 0) }} د.ج</td>
+                            <td class="px-4 py-4">
+                                <span class="badge {{ $ad->status == 'active' ? 'badge-emerald' : ($ad->status == 'pending' ? 'badge-amber' : 'badge-rose') }}">
                                     {{ $ad->status == 'active' ? 'نشط' : ($ad->status == 'pending' ? 'قيد المراجعة' : ($ad->status == 'rejected' ? 'مرفوض' : $ad->status)) }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3">{{ $ad->views_count }}</td>
-                            <td class="px-4 py-3 text-sm">{{ $ad->created_at->format('Y-m-d') }}</td>
-                            <td class="px-4 py-3">
-                                <div class="flex gap-2">
-                                    <a href="{{ route('ads.show', $ad->slug) }}" class="text-blue-600 hover:text-blue-800">
-                                        <i class="fas fa-eye"></i>
+                            <td class="px-4 py-4">{{ $ad->views_count }}</td>
+                            <td class="px-4 py-4 text-sm text-gray-500">{{ $ad->created_at->format('Y-m-d') }}</td>
+                            <td class="px-4 py-4">
+                                <div class="flex gap-3">
+                                    <a href="{{ route('ads.show', $ad->slug) }}" class="text-blue-400 hover:text-blue-300" title="عرض">
+                                        <i class="fa-solid fa-eye"></i>
                                     </a>
-                                    <a href="{{ route('ads.edit', $ad) }}" class="text-yellow-600 hover:text-yellow-800">
-                                        <i class="fas fa-edit"></i>
+                                    <a href="{{ route('ads.edit', $ad) }}" class="text-amber-400 hover:text-amber-300" title="تعديل">
+                                        <i class="fa-solid fa-pen"></i>
                                     </a>
                                     <form action="{{ route('ads.destroy', $ad) }}" method="POST" class="inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-800" onclick="return confirm('هل أنت متأكد؟')">
-                                            <i class="fas fa-trash"></i>
+                                        <button type="submit" class="text-rose-400 hover:text-rose-300" onclick="return confirm('هل أنت متأكد من حذف هذا الإعلان؟')" title="حذف">
+                                            <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </form>
                                 </div>
@@ -82,11 +77,13 @@
             {{ $ads->links() }}
         </div>
     @else
-        <div class="text-center py-12 bg-white rounded-lg shadow-md">
-            <i class="fas fa-clipboard-list text-gray-400 text-6xl mb-4"></i>
-            <h3 class="text-xl font-bold text-gray-600 mb-2">لا توجد إعلانات</h3>
-            <p class="text-gray-500 mb-4">لم تقم بنشر أي إعلان بعد</p>
-            <a href="{{ route('ads.create') }}" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">
+        <div class="card p-12 text-center">
+            <div class="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-clipboard-list text-emerald-400 text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">لا توجد إعلانات</h3>
+            <p class="text-gray-500 mb-6">لم تقم بنشر أي إعلان بعد</p>
+            <a href="{{ route('ads.create') }}" class="btn-premium px-8 py-3 rounded-xl inline-block">
                 إضافة إعلان جديد
             </a>
         </div>
