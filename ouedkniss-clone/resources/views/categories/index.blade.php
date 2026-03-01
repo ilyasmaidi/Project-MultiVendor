@@ -3,6 +3,9 @@
 @section('title', 'الفئات')
 
 @section('content')
+<div style="background-color: #e6e6fa; padding: 10px; border: 2px solid #9370db; margin-bottom: 20px;">
+    <h1 style="color: black; font-weight: bold; text-align: center;">هذا الملف هو: <code>resources/views/categories/index.blade.php</code></h1>
+</div>
 <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-8 text-center">جميع الفئات</h1>
 

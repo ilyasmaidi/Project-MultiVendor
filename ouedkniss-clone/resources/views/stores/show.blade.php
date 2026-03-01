@@ -3,6 +3,9 @@
 @section('title', $store->name)
 
 @section('content')
+<div style="background-color: #ffe4e1; padding: 10px; border: 2px solid #fa8072; margin-bottom: 20px;">
+    <h1 style="color: black; font-weight: bold; text-align: center;">هذا الملف هو: <code>resources/views/stores/show.blade.php</code></h1>
+</div>
 <div class="bg-white">
     <!-- Store Header -->
     <div class="bg-gradient-to-r from-red-600 to-red-700 text-white py-12">

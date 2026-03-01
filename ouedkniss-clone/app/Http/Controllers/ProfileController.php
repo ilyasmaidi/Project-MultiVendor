@@ -4,26 +4,29 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
 {
     public function show()
     {
-        $user = auth()->user();
+        $user = Auth::user();
         return view('profile.show', compact('user'));
     }
     
     public function edit()
     {
-        $user = auth()->user();
+        $user = Auth::user();
         return view('profile.edit', compact('user'));
     }
     
     public function update(Request $request)
     {
-        $user = auth()->user();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
         
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -45,7 +48,8 @@ class ProfileController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
         
-        $user = auth()->user();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
         
         if (!Hash::check($request->current_password, $user->password)) {
             return back()->withErrors(['current_password' => 'كلمة المرور الحالية غير صحيحة']);
@@ -64,7 +68,8 @@ class ProfileController extends Controller
             'avatar' => 'required|image|max:2048',
         ]);
         
-        $user = auth()->user();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
         
         if ($user->avatar) {
             Storage::disk('public')->delete($user->avatar);
@@ -83,7 +88,8 @@ class ProfileController extends Controller
             'password' => 'required',
         ]);
         
-        $user = auth()->user();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
         
         if (!Hash::check($request->password, $user->password)) {
             return back()->withErrors(['password' => 'كلمة المرور غير صحيحة']);
@@ -92,7 +98,7 @@ class ProfileController extends Controller
         // Soft delete - mark as inactive
         $user->update(['is_active' => false]);
         
-        auth()->logout();
+        Auth::logout();
         
         return redirect()->route('home')->with('success', 'تم حذف حسابك بنجاح');
     }

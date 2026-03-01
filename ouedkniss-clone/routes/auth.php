@@ -17,10 +17,23 @@ Route::post('/login', function (Request $request) {
         'password' => ['required'],
     ]);
 
-    if (Auth::attempt($credentials, $request->boolean('remember'))) {
-        $request->session()->regenerate();
-        return redirect()->intended('/');
+    $user = User::where('email', $credentials['email'])->first();
+
+    if (!$user || !Hash::check($credentials['password'], $user->password)) {
+        return back()->withErrors([
+            'email' => 'بيانات الدخول غير صحيحة.',
+        ]);
     }
+
+    if (!$user->is_active) {
+        return back()->withErrors([
+            'email' => 'حسابك غير نشط. يرجى الاتصال بالمسؤول.', // Your account is inactive. Please contact the administrator.
+        ]);
+    }
+
+    Auth::login($user, $request->boolean('remember'));
+    $request->session()->regenerate();
+    return redirect()->intended('/');
 
     return back()->withErrors([
         'email' => 'بيانات الدخول غير صحيحة.',

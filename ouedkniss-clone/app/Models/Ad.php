@@ -75,9 +75,9 @@ class Ad extends Model
         return $this->hasMany(AdImage::class)->orderBy('sort_order');
     }
 
-    public function primaryImage(): BelongsTo
+    public function primaryImage()
     {
-        return $this->belongsTo(AdImage::class, 'primary_image_id');
+        return $this->hasOne(AdImage::class)->where('is_primary', true);
     }
 
     public function attributes(): BelongsToMany

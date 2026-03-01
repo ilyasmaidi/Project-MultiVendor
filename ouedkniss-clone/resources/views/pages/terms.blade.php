@@ -3,6 +3,9 @@
 @section('title', 'الشروط والأحكام')
 
 @section('content')
+<div style="background-color: #d4edda; padding: 10px; border: 2px solid #28a745; margin-bottom: 20px;">
+    <h1 style="color: black; font-weight: bold; text-align: center;">هذا الملف هو: <code>resources/views/pages/terms.blade.php</code></h1>
+</div>
 <div class="container mx-auto px-4 py-8 max-w-4xl">
     <h1 class="text-3xl font-bold mb-8 text-center">الشروط والأحكام</h1>
 

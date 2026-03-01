@@ -22,7 +22,7 @@ use App\Http\Controllers\VendorDashboardController;
 Route::get('/', Home::class)->name('home');
 
 // Ads Routes
-Route::get('/ads', AdListing::class)->name('ads.index');
+Route::get('/ads', [App\Http\Controllers\AdController::class, 'index'])->name('ads.index');
 Route::get('/ads/create', [AdController::class, 'create'])->name('ads.create')->middleware('auth');
 Route::post('/ads', [AdController::class, 'store'])->name('ads.store')->middleware('auth');
 Route::get('/ads/{slug}', AdDetail::class)->name('ads.show');

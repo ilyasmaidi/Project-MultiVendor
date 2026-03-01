@@ -1,4 +1,7 @@
 <div class="max-w-7xl mx-auto px-4 py-12 lg:px-8 bg-gradient-subtle min-h-screen text-right" dir="rtl">
+    <div style="background-color: #d1ecf1; padding: 10px; border: 2px solid #bee5eb; margin-bottom: 20px;">
+        <h1 style="color: black; font-weight: bold; text-align: center;">هذا الملف هو: <code>resources/views/livewire/ad-detail.blade.php</code></h1>
+    </div>
     {{-- Breadcrumbs - مسار التنقل --}}
     <nav class="mb-8 flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-widest">
         <a href="/" class="hover:text-emerald-500 transition-colors">الرئيسية</a>
@@ -137,9 +140,9 @@
         .text-shadow-sm { text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         
         /* تأثير النعومة عند التحميل */
-        [wire:loading] {
+        /* [wire:loading] {
             opacity: 0.7;
             pointer-events: none;
-        }
+        } */
     </style>
 </div>

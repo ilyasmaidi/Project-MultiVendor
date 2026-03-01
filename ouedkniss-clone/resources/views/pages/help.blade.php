@@ -3,6 +3,9 @@
 @section('title', 'مركز المساعدة')
 
 @section('content')
+<div style="background-color: #ffcccb; padding: 10px; border: 2px solid red; margin-bottom: 20px;">
+    <h1 style="color: black; font-weight: bold; text-align: center;">هذا الملف هو: <code>resources/views/pages/help.blade.php</code></h1>
+</div>
 <div class="container mx-auto px-4 py-8 max-w-4xl">
     <h1 class="text-3xl font-bold mb-8 text-center">مركز المساعدة</h1>
 

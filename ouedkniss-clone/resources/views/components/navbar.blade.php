@@ -8,14 +8,39 @@
         </div>
 
         <div class="hidden lg:flex items-center gap-8">
-            <a href="{{ route('ads.index') }}" class="nav-link text-sm uppercase {{ request()->routeIs('ads.index') ? 'active' : '' }}">اكتشف الكل</a>
-            <a href="{{ route('ads.by-category', 'men') }}" class="nav-link text-sm uppercase">الرجال</a>
-            <a href="{{ route('ads.by-category', 'women') }}" class="nav-link text-sm uppercase text-emerald-400">النساء</a>
-            <a href="{{ route('stores.index') }}" class="nav-link text-sm uppercase {{ request()->routeIs('stores.*') ? 'active' : '' }}">المتاجر العالمية</a>
-            <a href="{{ route('categories.index') }}" class="nav-link text-sm uppercase {{ request()->routeIs('categories.*') ? 'active' : '' }}">التصنيفات</a>
+            {{-- اكتشف الكل: يتفعل فقط إذا كنت في صفحة الإعلانات ولست داخل تصنيف --}}
+            <a href="{{ route('ads.index') }}" 
+               class="nav-link text-sm uppercase {{ (request()->routeIs('ads.index') && !request()->segment(2)) ? 'active' : '' }}">
+               اكتشف الكل
+            </a>
+
+            {{-- الرجال: يتفعل فقط إذا كان السلوج هو men --}}
+            <a href="{{ route('ads.by-category', 'men') }}" 
+               class="nav-link text-sm uppercase {{ request()->is('category/men*') ? 'active' : '' }}">
+               الرجال
+            </a>
+
+            {{-- النساء: تم حذف text-emerald-400 الثابت ليعمل التحديد فقط عند الضغط --}}
+            <a href="{{ route('ads.by-category', 'women') }}" 
+               class="nav-link text-sm uppercase {{ request()->is('category/women*') ? 'active' : '' }}">
+               النساء
+            </a>
+
+            {{-- المتاجر العالمية --}}
+            <a href="{{ route('stores.index') }}" 
+               class="nav-link text-sm uppercase {{ request()->routeIs('stores.*') ? 'active' : '' }}">
+               المتاجر العالمية
+            </a>
+
+            {{-- التصنيفات --}}
+            <a href="{{ route('categories.index') }}" 
+               class="nav-link text-sm uppercase {{ request()->routeIs('categories.*') ? 'active' : '' }}">
+               التصنيفات
+            </a>
         </div>
 
         <div class="flex items-center gap-5">
+            {{-- Search Bar --}}
             <div class="relative hidden sm:block">
                 <form action="{{ route('search') }}" method="GET">
                     <input type="text" name="q" placeholder="ابحث عن ماركة..." value="{{ request('q') }}"
@@ -27,17 +52,23 @@
             </div>
             
             @auth
-                <a href="{{ route('dashboard') }}" class="text-xl hover:text-emerald-500 transition-colors" title="لوحة التحكم">
+                {{-- Dashboard --}}
+                <a href="{{ route('dashboard') }}" 
+                   class="text-xl transition-colors {{ request()->routeIs('dashboard*') ? 'text-emerald-500' : 'hover:text-emerald-500' }}">
                     <i class="fa-solid fa-chart-line"></i>
                 </a>
                 
                 @livewire('notification-bell')
                 
-                <a href="{{ route('profile') }}" class="text-xl hover:text-emerald-500 transition-colors">
+                {{-- Profile --}}
+                <a href="{{ route('profile') }}" 
+                   class="text-xl transition-colors {{ request()->routeIs('profile*') ? 'text-emerald-500' : 'hover:text-emerald-500' }}">
                     <i class="fa-regular fa-user"></i>
                 </a>
                 
-                <a href="{{ route('messages.index') }}" class="text-xl hover:text-emerald-500 transition-colors relative" title="الرسائل">
+                {{-- Messages --}}
+                <a href="{{ route('messages.index') }}" 
+                   class="text-xl transition-colors relative {{ request()->routeIs('messages.*') ? 'text-emerald-500' : 'hover:text-emerald-500' }}">
                     <i class="fa-regular fa-envelope"></i>
                     @php
                         $unreadCount = auth()->user()->messages()->whereNull('read_at')->count();
@@ -50,32 +81,25 @@
                 <a href="{{ route('login') }}" class="text-sm font-bold hover:text-emerald-400 transition-colors uppercase tracking-widest">دخول</a>
             @endauth
 
+            {{-- Mobile Toggle --}}
             <button class="lg:hidden text-2xl text-emerald-500" onclick="document.getElementById('mobileMenu').classList.toggle('hidden')">
                 <i class="fa-solid fa-bars-staggered"></i>
             </button>
             
-            @auth
-                <a href="{{ route('ads.create') }}" class="btn-premium px-6 py-2.5 rounded-full text-xs hidden sm:block">ابدأ البيع</a>
-            @else
-                <a href="{{ route('login') }}" class="btn-premium px-6 py-2.5 rounded-full text-xs hidden sm:block">ابدأ البيع</a>
-            @endauth
+            {{-- CTA Button --}}
+            <a href="{{ auth()->check() ? route('ads.create') : route('login') }}" 
+               class="btn-premium px-6 py-2.5 rounded-full text-xs hidden sm:block">
+               ابدأ البيع
+            </a>
         </div>
     </div>
     
-    <!-- Mobile Menu -->
     <div id="mobileMenu" class="hidden lg:hidden bg-[#16181d] border-t border-white/5">
         <div class="container mx-auto px-4 py-4 space-y-2">
-            <a href="{{ route('ads.index') }}" class="block py-3 px-4 hover:bg-white/5 rounded-lg font-bold">اكتشف الكل</a>
-            <a href="{{ route('stores.index') }}" class="block py-3 px-4 hover:bg-white/5 rounded-lg font-bold">المتاجر العالمية</a>
-            <a href="{{ route('categories.index') }}" class="block py-3 px-4 hover:bg-white/5 rounded-lg font-bold">التصنيفات</a>
-            
-            @auth
-                <hr class="border-white/10 my-4">
-                <a href="{{ route('dashboard') }}" class="block py-3 px-4 hover:bg-white/5 rounded-lg font-bold">لوحة التحكم</a>
-                <a href="{{ route('my-ads') }}" class="block py-3 px-4 hover:bg-white/5 rounded-lg font-bold">إعلاناتي</a>
-                <a href="{{ route('messages.index') }}" class="block py-3 px-4 hover:bg-white/5 rounded-lg font-bold">الرسائل</a>
-                <a href="{{ route('favorites.index') }}" class="block py-3 px-4 hover:bg-white/5 rounded-lg font-bold">المفضلة</a>
-            @endauth
+            <a href="{{ route('ads.index') }}" class="block py-3 px-4 rounded-lg font-bold {{ (request()->routeIs('ads.index') && !request()->segment(2)) ? 'bg-emerald-500/10 text-emerald-500' : 'hover:bg-white/5' }}">اكتشف الكل</a>
+            <a href="{{ route('ads.by-category', 'men') }}" class="block py-3 px-4 rounded-lg font-bold {{ request()->is('category/men*') ? 'bg-emerald-500/10 text-emerald-500' : 'hover:bg-white/5' }}">الرجال</a>
+            <a href="{{ route('ads.by-category', 'women') }}" class="block py-3 px-4 rounded-lg font-bold {{ request()->is('category/women*') ? 'bg-emerald-500/10 text-emerald-500' : 'hover:bg-white/5' }}">النساء</a>
+            <a href="{{ route('stores.index') }}" class="block py-3 px-4 rounded-lg font-bold {{ request()->routeIs('stores.*') ? 'bg-emerald-500/10 text-emerald-500' : 'hover:bg-white/5' }}">المتاجر العالمية</a>
         </div>
     </div>
 </nav>
