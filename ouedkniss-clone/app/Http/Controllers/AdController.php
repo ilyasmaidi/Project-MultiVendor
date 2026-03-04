@@ -16,35 +16,16 @@ class AdController extends Controller
     /**
      * عرض المتجر العالمي (دمج الحقيقي والوهمي)
      */
-    public function index()
-    {
-        // 1. جلب الإعلانات الحقيقية النشطة من قاعدة البيانات
-        $realAds = Ad::with(['category', 'images', 'user', 'store'])
-                     ->where('status', 'active')
-                     ->latest()
-                     ->get();
+    public function index(Request $request)
+{
+    // جلب الإعلانات النشطة مع العلاقات (Category) لتحسين الأداء (Eager Loading)
+    $ads = Ad::with('category')
+        ->where('status', 'active') // عرض الإعلانات النشطة فقط
+        ->latest() // الأحدث أولاً
+        ->paginate(12); // تقسيم الصفحات (Pagination)
 
-        // 2. توليد إعلانات وهمية "عالمية" بماركات مشهورة لملء المتجر
-        $fakeAds = $this->generateGlobalFakeAds();
-
-        // 3. دمج المجموعتين وخلطهما عشوائياً لمظهر متجدد دائماً
-        $allAds = $realAds->concat($fakeAds)->shuffle();
-
-        // 4. إعداد الترقيم اليدوي (Manual Pagination)
-        $currentPage = LengthAwarePaginator::resolveCurrentPage();
-        $perPage = 20; // عدد المنتجات في كل صفحة
-        $currentItems = $allAds->slice(($currentPage - 1) * $perPage, $perPage)->all();
-        
-        $ads = new LengthAwarePaginator(
-            $currentItems, 
-            $allAds->count(), 
-            $perPage, 
-            $currentPage, 
-            ['path' => LengthAwarePaginator::resolveCurrentPath()]
-        );
-
-        return view('ads.index', compact('ads'));
-    }
+    return view('ads.index', compact('ads'));
+}
 
     /**
      * صفحة إنشاء إعلان جديد
@@ -138,27 +119,38 @@ class AdController extends Controller
      * تحديث البيانات في قاعدة البيانات
      */
     public function update(Request $request, Ad $ad)
-    {
-        $this->authorize('update', $ad);
-
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'nullable|numeric|min:0',
-            'price_type' => 'required|in:fixed,negotiable,free',
-            'condition' => 'required|in:new,used,refurbished',
-            'location' => 'nullable|string|max:255',
-            'city' => 'nullable|string|max:255',
-            'contact_phone' => 'nullable|string|max:20',
-            'contact_whatsapp' => 'nullable|string|max:20',
-            'status' => 'required|in:pending,active,sold,archived',
-        ]);
-
-        $ad->update($validated);
-
-        return redirect()->route('ads.show', $ad->slug)
-            ->with('success', 'تم تحديث البيانات بنجاح.');
+{
+    // 1. التحقق من الصلاحية (Security Check)
+    // نضمن أن البائع الحالي هو فقط من يمكنه تعديل إعلانه
+    if (auth()->id() !== $ad->user_id) {
+        return redirect()->route('my-ads')->with('error', 'غير مسموح لك بتعديل هذا الإعلان.');
     }
+
+    // 2. التحقق من البيانات المدخلة (Validation)
+    $validated = $request->validate([
+        'title' => 'required|string|max:255',
+        'description' => 'required|string|min:10',
+        'price' => 'nullable|numeric|min:0',
+        'city' => 'nullable|string|max:100',
+        'condition' => 'required|in:new,used',
+        'contact_phone' => 'nullable|string|max:20',
+        'is_negotiable' => 'nullable', // سنتعامل معه كـ boolean بالأسفل
+    ]);
+
+    // 3. معالجة الـ Checkbox (لأن الـ checkbox لا يرسل قيمة إذا لم يتم تحديده)
+    $validated['is_negotiable'] = $request->has('is_negotiable');
+
+    // 4. تنفيذ التحديث في قاعدة البيانات
+    try {
+        $ad->update($validated);
+        
+        // إذا نجح التحديث، نعود لصفحة التعديل مع رسالة نجاح
+        return redirect()->route('ads.edit', $ad->id)->with('success', 'تم تحديث بيانات الإعلان بنجاح ✨');
+    } catch (\Exception $e) {
+        // في حال حدوث خطأ تقني غير متوقع
+        return back()->with('error', 'حدث خطأ أثناء التحديث، يرجى المحاولة لاحقاً.');
+    }
+}
 
     /**
      * حذف الإعلان

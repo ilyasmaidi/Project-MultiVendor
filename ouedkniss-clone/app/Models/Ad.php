@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -55,6 +56,39 @@ class Ad extends Model
         'featured_until' => 'datetime',
     ];
 
+    // --- Accessors المضافة لدعم واجهة TRICO ---
+
+    /**
+     * جلب رابط الصورة الأساسية للإعلان
+     * يستخدم العلاقة primaryImage إذا وجدت، وإلا يجلب أول صورة، أو صورة افتراضية
+     */
+    public function getPrimaryImageUrlAttribute(): string
+    {
+        // 1. محاولة جلب الصورة المحددة كأساسية
+        if ($this->primaryImage) {
+            return asset('storage/' . $this->primaryImage->image_path);
+        }
+
+        // 2. محاولة جلب أول صورة مرتبطة بالإعلان
+        $firstImage = $this->images()->first();
+        if ($firstImage) {
+            return asset('storage/' . $firstImage->image_path);
+        }
+
+        // 3. صورة افتراضية في حال عدم وجود صور
+        return 'https://via.placeholder.com/400x600?text=TRICO+Fashion';
+    }
+
+    /**
+     * تحويل الحالة (Condition) إلى نص عربي للعرض
+     */
+    public function getConditionTextAttribute(): string
+    {
+        return $this->condition === 'new' ? 'جديد' : 'مستعمل';
+    }
+
+    // --- العلاقات (Relations) ---
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -75,7 +109,7 @@ class Ad extends Model
         return $this->hasMany(AdImage::class)->orderBy('sort_order');
     }
 
-    public function primaryImage()
+    public function primaryImage(): HasOne
     {
         return $this->hasOne(AdImage::class)->where('is_primary', true);
     }
@@ -96,6 +130,8 @@ class Ad extends Model
     {
         return $this->belongsTo(FeaturedAd::class);
     }
+
+    // --- النطاقات (Scopes) ---
 
     public function scopeActive($query)
     {
@@ -138,6 +174,8 @@ class Ad extends Model
     {
         return $query->where('city', $city);
     }
+
+    // --- دوال المساعدة (Helper Methods) ---
 
     public function incrementViews(): void
     {
