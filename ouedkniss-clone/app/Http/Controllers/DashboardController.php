@@ -6,12 +6,14 @@ use Illuminate\Http\Request;
 use App\Models\Ad;
 use App\Models\Message;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
         
         // Stats
         $stats = [
@@ -62,7 +64,8 @@ class DashboardController extends Controller
     
     public function stats()
     {
-        $user = auth()->user();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
         
         // Get stats by month for charts
         $monthlyStats = [];
@@ -93,7 +96,8 @@ class DashboardController extends Controller
     
     public function activity()
     {
-        $user = auth()->user();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
         $activities = $this->getRecentActivity($user, 50);
         
         return view('dashboard.activity', compact('activities'));
@@ -105,7 +109,7 @@ class DashboardController extends Controller
         
         // Recent ads
         $ads = $user->ads()
-            ->select('id', 'title', 'status', 'created_at', 'updated_at')
+            ->select('id', 'title', 'slug', 'status', 'created_at', 'updated_at')
             ->latest()
             ->take($limit)
             ->get();

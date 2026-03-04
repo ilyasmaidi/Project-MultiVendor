@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
 
 class AdController extends Controller
 {
@@ -53,12 +54,13 @@ class AdController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
         
-        // التحقق من سقف الإعلانات (30 إعلان)
-        if ($user && !$user->canCreateMoreAds()) {
-            return redirect()->back()->with('error', 'لقد وصلت للحد الأقصى من الإعلانات المسموح بها');
+        // التحقق من صلاحية المستخدم للنشر (الحد الأقصى 30 كما في المودل)
+        if (!$user->canCreateMoreAds()) {
+            return redirect()->route('ads.index')
+                ->with('error', 'لقد وصلت للحد الأقصى من الإعلانات المسموح بها (30 إعلاناً).');
         }
 
-        $categories = Category::active()->root()->with('children')->get();
+        $categories = Category::whereNull('parent_id')->with('children')->get();
         return view('ads.create', compact('categories'));
     }
 
@@ -85,6 +87,7 @@ class AdController extends Controller
 
         $ad = Ad::create([
             ...$validated,
+            'slug' => Str::slug($validated['title']),
             'user_id' => Auth::id(),
             'store_id' => $user->store?->id,
             'status' => 'pending', // يحتاج مراجعة الإدارة أولاً
@@ -118,13 +121,7 @@ class AdController extends Controller
 
         $ad->incrementViews();
 
-        // اختيار القالب بناءً على نوع الفئة (سيارات، ملابس، عقارات...)
-        $template = 'ads.show-' . ($ad->template ?? 'general');
-        if (!view()->exists($template)) {
-            $template = 'ads.show-general';
-        }
-
-        return view($template, compact('ad'));
+        return view('ads.show', compact('ad'));
     }
 
     /**
@@ -173,6 +170,21 @@ class AdController extends Controller
 
         return redirect()->route('my-ads')
             ->with('success', 'تم حذف الإعلان نهائياً.');
+    }
+
+    /**
+     * عرض إعلانات المستخدم الحالي
+     */
+    public function myAds()
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $ads = $user->ads()
+            ->with('category', 'images')
+            ->latest()
+            ->paginate(20);
+
+        return view('ads.my-ads', compact('ads'));
     }
 
     /**

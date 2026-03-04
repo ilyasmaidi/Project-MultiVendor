@@ -13,4 +13,6 @@
             </div>
             </div>
     </section>
+
+    <x-category-grid />
 @endsection

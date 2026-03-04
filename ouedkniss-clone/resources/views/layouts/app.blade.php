@@ -33,6 +33,7 @@
 
     {{-- CHANGED: We now use @yield('content') instead of {{ $slot }} --}}
     <main>
+        {{ $slot ?? '' }}
         @yield('content')
     </main>
 

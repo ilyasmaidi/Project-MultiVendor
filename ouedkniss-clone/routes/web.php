@@ -25,7 +25,7 @@ Route::get('/', Home::class)->name('home');
 Route::get('/ads', [App\Http\Controllers\AdController::class, 'index'])->name('ads.index');
 Route::get('/ads/create', [AdController::class, 'create'])->name('ads.create')->middleware('auth');
 Route::post('/ads', [AdController::class, 'store'])->name('ads.store')->middleware('auth');
-Route::get('/ads/{slug}', AdDetail::class)->name('ads.show');
+Route::get('/ads/{slug}', [AdController::class, 'show'])->name('ads.show');
 Route::get('/category/{slug}', AdListing::class)->name('ads.by-category');
 
 // Categories
