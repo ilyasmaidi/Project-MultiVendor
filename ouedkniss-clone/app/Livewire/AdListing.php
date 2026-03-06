@@ -43,7 +43,7 @@ class AdListing extends Component
         }
     }
 
-    #[Layout('layouts.main')]
+    #[Layout('layouts.app')]
     public function render()
     {
         // 1. بناء الاستعلام الأساسي

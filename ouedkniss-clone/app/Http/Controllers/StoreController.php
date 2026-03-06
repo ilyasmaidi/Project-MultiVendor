@@ -9,15 +9,24 @@ class StoreController extends Controller
 {
     public function index()
     {
-        $stores = Store::active()->verified()->with('user')->paginate(20);
+        // استخدام withCount('ads') لجلب عدد الإعلانات بكفاءة عالية
+        $stores = Store::where('is_active', true)
+            ->withCount('ads') 
+            ->latest()
+            ->paginate(12); // 12 رقم مثالي لتقسيم الشبكة (3 أعمدة أو 4)
+
         return view('stores.index', compact('stores'));
     }
 
     public function show($slug)
     {
+        // جلب المتجر مع الإعلانات وصورها الأساسية في استعلام واحد
         $store = Store::where('slug', $slug)
+            ->withCount('ads')
             ->with(['user', 'ads' => function ($query) {
-                $query->active()->latest();
+                $query->active()
+                      ->with('primaryImage') // تأكد من تحميل الصورة الأساسية لتجنب البطء
+                      ->latest();
             }])
             ->firstOrFail();
 

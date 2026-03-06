@@ -4,98 +4,80 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Category;
+use Illuminate\Support\Facades\Schema;
 
 class CategorySeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
+        // 1. تعطيل التحقق من القيود (Foreign Key Checks) لمسح الجدول بأمان
+        Schema::disableForeignKeyConstraints();
+        Category::truncate(); // مسح كل البيانات القديمة تماماً
+        Schema::enableForeignKeyConstraints();
+
         $categories = [
-            // Real Estate
             [
-                'name' => 'عقارات',
-                'slug' => 'real-estate',
-                'type' => 'real_estate',
-                'icon' => 'heroicon-o-home',
-                'children' => [
-                    ['name' => 'بيع', 'slug' => 'sell', 'type' => 'real_estate'],
-                    ['name' => 'إيجار', 'slug' => 'rent', 'type' => 'real_estate'],
-                    ['name' => 'تبادل', 'slug' => 'exchange', 'type' => 'real_estate'],
-                ],
-            ],
-            // Cars
-            [
-                'name' => 'سيارات',
-                'slug' => 'cars',
-                'type' => 'car',
-                'icon' => 'heroicon-o-truck',
-                'children' => [
-                    ['name' => 'سيارات للبيع', 'slug' => 'cars-for-sale', 'type' => 'car'],
-                    ['name' => 'قطع غيار', 'slug' => 'spare-parts', 'type' => 'general'],
-                    ['name' => 'إكسسوارات', 'slug' => 'accessories', 'type' => 'general'],
-                ],
-            ],
-            // Electronics
-            [
-                'name' => 'إلكترونيات',
-                'slug' => 'electronics',
+                'name' => 'رجالي',
+                'slug' => 'men',
                 'type' => 'general',
-                'icon' => 'heroicon-o-device-phone-mobile',
+                'icon' => 'heroicon-o-user',
                 'children' => [
-                    ['name' => 'هواتف', 'slug' => 'phones', 'type' => 'general'],
-                    ['name' => 'حواسيب', 'slug' => 'computers', 'type' => 'general'],
-                    ['name' => 'تلفزيونات', 'slug' => 'tvs', 'type' => 'general'],
+                    ['name' => 'تيشرتات قطنية', 'slug' => 'men-t-shirts', 'type' => 'general'],
+                    ['name' => 'قمصان بولو', 'slug' => 'men-polo', 'type' => 'general'],
+                    ['name' => 'هوديز وسويت شيرت', 'slug' => 'men-hoodies', 'type' => 'general'],
                 ],
             ],
-            // Furniture
             [
-                'name' => 'أثاث',
-                'slug' => 'furniture',
+                'name' => 'نسائي',
+                'slug' => 'women',
                 'type' => 'general',
-                'icon' => 'heroicon-o-cube',
+                'icon' => 'heroicon-o-user-circle',
                 'children' => [
-                    ['name' => 'غرف نوم', 'slug' => 'bedrooms', 'type' => 'general'],
-                    ['name' => 'غرف جلوس', 'slug' => 'living-rooms', 'type' => 'general'],
-                    ['name' => 'مطبخ', 'slug' => 'kitchen', 'type' => 'general'],
+                    ['name' => 'تيشرتات (T-Shirts)', 'slug' => 'women-t-shirts', 'type' => 'general'],
+                    ['name' => 'توب وبلوزات', 'slug' => 'women-tops', 'type' => 'general'],
+                    ['name' => 'هوديز نسائي', 'slug' => 'women-hoodies', 'type' => 'general'],
                 ],
             ],
-            // Fashion
             [
-                'name' => 'أزياء',
-                'slug' => 'fashion',
+                'name' => 'أطفال',
+                'slug' => 'kids',
                 'type' => 'general',
-                'icon' => 'heroicon-o-shopping-bag',
+                'icon' => 'heroicon-o-face-smile',
                 'children' => [
-                    ['name' => 'رجالي', 'slug' => 'men', 'type' => 'general'],
-                    ['name' => 'نسائي', 'slug' => 'women', 'type' => 'general'],
-                    ['name' => 'أطفال', 'slug' => 'kids', 'type' => 'general'],
+                    ['name' => 'بناتي', 'slug' => 'girls', 'type' => 'general'],
+                    ['name' => 'ولادي', 'slug' => 'boys', 'type' => 'general'],
                 ],
             ],
-            // Services
             [
-                'name' => 'خدمات',
-                'slug' => 'services',
+                'name' => 'مجموعات خاصة',
+                'slug' => 'collections',
                 'type' => 'general',
-                'icon' => 'heroicon-o-wrench-screwdriver',
+                'icon' => 'heroicon-o-sparkles',
                 'children' => [
-                    ['name' => 'صيانة', 'slug' => 'maintenance', 'type' => 'general'],
-                    ['name' => 'نقل', 'slug' => 'transport', 'type' => 'general'],
-                    ['name' => 'تعليم', 'slug' => 'education', 'type' => 'general'],
+                    ['name' => 'تصاميم جزائرية (Dz Power)', 'slug' => 'dz-designs', 'type' => 'general'],
+                    ['name' => 'تيشرتات مخصصة (Custom)', 'slug' => 'custom-tshirts', 'type' => 'general'],
                 ],
             ],
         ];
 
         foreach ($categories as $categoryData) {
+            // فصل الأبناء عن البيانات الأساسية للأب
             $children = $categoryData['children'] ?? [];
             unset($categoryData['children']);
 
+            // إنشاء القسم الرئيسي (Parent)
             $parent = Category::create($categoryData);
 
+            // إنشاء الأقسام الفرعية (Children) وربطها بالـ parent_id
             foreach ($children as $childData) {
                 $childData['parent_id'] = $parent->id;
                 Category::create($childData);
             }
         }
 
-        $this->command->info('Categories created successfully!');
+        $this->command->info('✅ TRICO Categories: Seeding completed successfully!');
     }
 }

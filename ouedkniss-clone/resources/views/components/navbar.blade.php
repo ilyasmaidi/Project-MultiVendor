@@ -1,105 +1,136 @@
-<nav class="sticky top-0 z-50 bg-[#0f1115]/90 backdrop-blur-xl border-b border-white/5">
-    <div class="container mx-auto px-4 lg:px-8 h-20 flex items-center justify-between">
+@php
+    $navLinks = [
+        ['route' => 'home', 'label' => 'الرئيسية', 'icon' => 'fa-house', 'active' => request()->routeIs('home')],
+        ['route' => 'ads.index', 'label' => 'اكتشف', 'icon' => 'fa-compass', 'active' => request()->routeIs('ads.index')],
+        ['route' => 'ads.by-category', 'params' => 'men', 'label' => 'الرجال', 'icon' => 'fa-mars', 'active' => request()->is('category/men*')],
+        ['route' => 'ads.by-category', 'params' => 'women', 'label' => 'النساء', 'icon' => 'fa-venus', 'active' => request()->is('category/women*')],
+        ['route' => 'stores.index', 'label' => 'المتاجر', 'icon' => 'fa-shop', 'active' => request()->routeIs('stores.*')],
+    ];
+
+    if(auth()->check()) {
+        $userLinks = [
+            ['route' => 'dashboard', 'label' => 'اللوحة', 'icon' => 'fa-chart-line'],
+            ['route' => 'messages.index', 'label' => 'الرسائل', 'icon' => 'fa-envelope-open-text'],
+            ['route' => 'favorites.index', 'label' => 'المفضلة', 'icon' => 'fa-heart'],
+            ['route' => 'my-ads', 'label' => 'إعلاناتي', 'icon' => 'fa-boxes-stacked'],
+        ];
+    }
+@endphp
+
+<nav x-data="{ mobileMenuOpen: false, userMenuOpen: false }" 
+     class="sticky top-0 w-full z-[9999] border-b border-zinc-200 dark:border-white/5 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-2xl transition-all duration-500">
+    
+    <div class="max-w-[1920px] mx-auto px-4 lg:px-10 h-20 md:h-24 flex items-center justify-between gap-4">
         
-        <div class="flex items-center gap-4">
-            <a href="{{ route('home') }}" class="flex items-center gap-2">
-                <span class="font-international text-3xl font-black tracking-tighter text-white uppercase">TRI<span class="text-[#10b981]">CO</span></span>
+        {{-- 1. Logo (Left) --}}
+        <div class="flex-shrink-0">
+            <a href="{{ route('home') }}" class="group">
+                <span class="font-international text-2xl md:text-3xl font-black tracking-tighter text-zinc-900 dark:text-white uppercase transition-all">
+                    TRI<span class="text-emerald-500">CO</span>
+                </span>
             </a>
         </div>
 
-        <div class="hidden lg:flex items-center gap-8">
-            {{-- اكتشف الكل: يتفعل فقط إذا كنت في صفحة الإعلانات ولست داخل تصنيف --}}
-            <a href="{{ route('ads.index') }}" 
-               class="nav-link text-sm uppercase {{ (request()->routeIs('ads.index') && !request()->segment(2)) ? 'active' : '' }}">
-               اكتشف الكل
-            </a>
-
-            {{-- الرجال: يتفعل فقط إذا كان السلوج هو men --}}
-            <a href="{{ route('ads.by-category', 'men') }}" 
-               class="nav-link text-sm uppercase {{ request()->is('category/men*') ? 'active' : '' }}">
-               الرجال
-            </a>
-
-            {{-- النساء: تم حذف text-emerald-400 الثابت ليعمل التحديد فقط عند الضغط --}}
-            <a href="{{ route('ads.by-category', 'women') }}" 
-               class="nav-link text-sm uppercase {{ request()->is('category/women*') ? 'active' : '' }}">
-               النساء
-            </a>
-
-            {{-- المتاجر العالمية --}}
-            <a href="{{ route('stores.index') }}" 
-               class="nav-link text-sm uppercase {{ request()->routeIs('stores.*') ? 'active' : '' }}">
-               المتاجر العالمية
-            </a>
-
-            {{-- التصنيفات --}}
-            <a href="{{ route('categories.index') }}" 
-               class="nav-link text-sm uppercase {{ request()->routeIs('categories.*') ? 'active' : '' }}">
-               التصنيفات
-            </a>
+        {{-- 2. Active Center Search (المحرك المباشر) --}}
+        <div class="hidden md:flex flex-1 max-w-2xl relative group">
+            <form action="{{ route('search') }}" method="GET" class="w-full relative">
+                <div class="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none transition-colors group-focus-within:text-emerald-500 text-zinc-400">
+                    <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                </div>
+                
+                <input type="text" 
+                       name="q" 
+                       value="{{ request('q') }}"
+                       placeholder="ابحث عن الماركات، المنتجات، أو المتاجر..." 
+                       class="w-full bg-zinc-100 dark:bg-white/5 border border-transparent focus:border-emerald-500/50 focus:bg-white dark:focus:bg-zinc-900 focus:ring-4 focus:ring-emerald-500/5 rounded-2xl py-3.5 pr-12 pl-6 text-[13px] font-bold text-zinc-600 dark:text-zinc-300 transition-all hover:bg-zinc-200/50 dark:hover:bg-white/10 outline-none">
+                
+                {{-- زر إنتر صغير جمالي يظهر عند الكتابة --}}
+                <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity">
+                    <kbd class="text-[10px] font-black bg-zinc-200 dark:bg-zinc-800 text-zinc-500 px-2 py-1 rounded-lg tracking-widest uppercase">ENTER</kbd>
+                </div>
+            </form>
         </div>
 
-        <div class="flex items-center gap-5">
-            {{-- Search Bar --}}
-            <div class="relative hidden sm:block">
-                <form action="{{ route('search') }}" method="GET">
-                    <input type="text" name="q" placeholder="ابحث عن ماركة..." value="{{ request('q') }}"
-                        class="bg-white/5 border border-white/10 px-4 py-2 rounded-full text-xs w-64 focus:border-emerald-500 outline-none transition-all text-white">
-                    <button type="submit" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-emerald-400">
-                        <i class="fa-solid fa-search"></i>
-                    </button>
-                </form>
-            </div>
+        {{-- 3. Actions (Right) --}}
+        <div class="flex items-center gap-2 lg:gap-4">
             
+            {{-- Desktop Nav Links --}}
+            <div class="hidden xl:flex items-center gap-1 border-l border-zinc-200 dark:border-white/10 ml-2 pl-4">
+                @foreach($navLinks as $link)
+                    <a href="{{ isset($link['params']) ? route($link['route'], $link['params']) : route($link['route']) }}" 
+                       class="p-3 rounded-xl transition-all {{ $link['active'] ? 'text-emerald-500 bg-emerald-500/5' : 'text-zinc-500 dark:text-zinc-400 hover:text-emerald-500 hover:bg-zinc-100 dark:hover:bg-white/5' }}"
+                       title="{{ $link['label'] }}">
+                        <i class="fa-solid {{ $link['icon'] }} text-lg"></i>
+                    </a>
+                @endforeach
+            </div>
+
+            {{-- 🌓 Theme Toggle --}}
+            <button @click="document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light')"
+                    class="w-12 h-12 flex items-center justify-center rounded-2xl bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-300 hover:text-emerald-500 transition-all border border-transparent hover:border-emerald-500/20 shadow-sm">
+                <i class="fa-solid fa-sun dark:hidden text-lg"></i>
+                <i class="fa-solid fa-moon hidden dark:block text-lg"></i>
+            </button>
+
             @auth
-                {{-- Dashboard --}}
-                <a href="{{ route('dashboard') }}" 
-                   class="text-xl transition-colors {{ request()->routeIs('dashboard*') ? 'text-emerald-500' : 'hover:text-emerald-500' }}">
-                    <i class="fa-solid fa-chart-line"></i>
-                </a>
-                
-                @livewire('notification-bell')
-                
-                {{-- Profile --}}
-                <a href="{{ route('profile') }}" 
-                   class="text-xl transition-colors {{ request()->routeIs('profile*') ? 'text-emerald-500' : 'hover:text-emerald-500' }}">
-                    <i class="fa-regular fa-user"></i>
-                </a>
-                
-                {{-- Messages --}}
-                <a href="{{ route('messages.index') }}" 
-                   class="text-xl transition-colors relative {{ request()->routeIs('messages.*') ? 'text-emerald-500' : 'hover:text-emerald-500' }}">
-                    <i class="fa-regular fa-envelope"></i>
-                    @php
-                        $unreadCount = auth()->user()->messages()->whereNull('read_at')->count();
-                    @endphp
-                    @if($unreadCount > 0)
-                        <span class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full text-[10px] flex items-center justify-center">{{ $unreadCount }}</span>
-                    @endif
-                </a>
+                <div class="relative hidden sm:block" @click.away="userMenuOpen = false">
+                    <button @click="userMenuOpen = !userMenuOpen" class="w-12 h-12 rounded-2xl overflow-hidden border-2 border-emerald-500/20 hover:border-emerald-500 active:scale-90 transition-all">
+                        <img src="https://ui-avatars.com/api/?name={{ auth()->user()->name }}&background=10b981&color=fff" class="w-full h-full object-cover">
+                    </button>
+                    <div x-show="userMenuOpen" x-cloak x-transition class="absolute top-full left-0 mt-4 w-60 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 shadow-2xl rounded-[1.5rem] p-2 overflow-hidden">
+                        @foreach($userLinks as $link)
+                            <a href="{{ route($link['route']) }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-emerald-500/5 text-zinc-600 dark:text-zinc-400 hover:text-emerald-500 transition-all">
+                                <i class="fa-solid {{ $link['icon'] }} w-5 text-[14px]"></i>
+                                <span class="text-[11px] font-black uppercase tracking-widest">{{ $link['label'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
             @else
-                <a href="{{ route('login') }}" class="text-sm font-bold hover:text-emerald-400 transition-colors uppercase tracking-widest">دخول</a>
+                <a href="{{ route('login') }}" class="hidden sm:flex px-6 py-3 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 dark:hover:bg-emerald-500 dark:hover:text-white transition-all">دخول</a>
             @endauth
 
-            {{-- Mobile Toggle --}}
-            <button class="lg:hidden text-2xl text-emerald-500" onclick="document.getElementById('mobileMenu').classList.toggle('hidden')">
-                <i class="fa-solid fa-bars-staggered"></i>
+            {{-- Mobile Trigger --}}
+            <button @click="mobileMenuOpen = !mobileMenuOpen" 
+                    class="xl:hidden w-12 h-12 flex items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 active:scale-90 transition-all">
+                <i class="fa-solid" :class="mobileMenuOpen ? 'fa-xmark' : 'fa-bars-staggered'"></i>
             </button>
-            
-            {{-- CTA Button --}}
-            <a href="{{ auth()->check() ? route('ads.create') : route('login') }}" 
-               class="btn-premium px-6 py-2.5 rounded-full text-xs hidden sm:block">
-               ابدأ البيع
-            </a>
         </div>
     </div>
-    
-    <div id="mobileMenu" class="hidden lg:hidden bg-[#16181d] border-t border-white/5">
-        <div class="container mx-auto px-4 py-4 space-y-2">
-            <a href="{{ route('ads.index') }}" class="block py-3 px-4 rounded-lg font-bold {{ (request()->routeIs('ads.index') && !request()->segment(2)) ? 'bg-emerald-500/10 text-emerald-500' : 'hover:bg-white/5' }}">اكتشف الكل</a>
-            <a href="{{ route('ads.by-category', 'men') }}" class="block py-3 px-4 rounded-lg font-bold {{ request()->is('category/men*') ? 'bg-emerald-500/10 text-emerald-500' : 'hover:bg-white/5' }}">الرجال</a>
-            <a href="{{ route('ads.by-category', 'women') }}" class="block py-3 px-4 rounded-lg font-bold {{ request()->is('category/women*') ? 'bg-emerald-500/10 text-emerald-500' : 'hover:bg-white/5' }}">النساء</a>
-            <a href="{{ route('stores.index') }}" class="block py-3 px-4 rounded-lg font-bold {{ request()->routeIs('stores.*') ? 'bg-emerald-500/10 text-emerald-500' : 'hover:bg-white/5' }}">المتاجر العالمية</a>
+
+    {{-- 📱 Mobile Navigation Menu --}}
+    <div x-show="mobileMenuOpen" x-cloak 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-x-full"
+         x-transition:enter-end="opacity-100 translate-x-0"
+         class="fixed inset-0 w-full h-screen z-[10000] xl:hidden bg-white dark:bg-zinc-950">
+        <div class="relative h-full flex flex-col p-8 pt-24">
+            
+            {{-- Mobile Active Search --}}
+            <form action="{{ route('search') }}" method="GET" class="w-full mb-10">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute right-5 top-1/2 -translate-y-1/2 text-zinc-400"></i>
+                    <input type="text" name="q" placeholder="عما تبحث؟" 
+                           class="w-full p-5 pr-14 bg-zinc-100 dark:bg-white/5 rounded-3xl outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white font-bold text-sm">
+                </div>
+            </form>
+
+            <div class="space-y-6 overflow-y-auto">
+                @foreach($navLinks as $link)
+                    <a href="{{ isset($link['params']) ? route($link['route'], $link['params']) : route($link['route']) }}" 
+                       class="flex items-center justify-between group">
+                        <span class="text-4xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter transition-all group-hover:text-emerald-500">{{ $link['label'] }}</span>
+                        <i class="fa-solid {{ $link['icon'] }} text-xl text-emerald-500 opacity-0 group-hover:opacity-100 transition-all"></i>
+                    </a>
+                @endforeach
+            </div>
+
+            <div class="mt-auto border-t border-zinc-100 dark:border-white/10 pt-8 flex flex-col gap-4">
+                <a href="{{ route('ads.create') }}" class="w-full py-5 bg-emerald-500 text-white rounded-2xl text-center font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-500/30">إضافة إعلان</a>
+                @guest
+                    <a href="{{ route('login') }}" class="w-full py-5 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-2xl text-center font-black text-xs uppercase tracking-widest">دخول</a>
+                @endguest
+            </div>
         </div>
     </div>
 </nav>
