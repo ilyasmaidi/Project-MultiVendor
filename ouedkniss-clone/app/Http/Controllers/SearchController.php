@@ -10,9 +10,11 @@ class SearchController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Ad::query()->with('category', 'images', 'user');
-        
-        // Text search
+        // استخدام Eager Loading لتقليل الضغط على قاعدة البيانات
+        $query = Ad::query()->with(['category', 'images', 'user', 'store'])
+            ->where('status', 'active');
+
+        // البحث النصي (العنوان، الوصف، المدينة)
         if ($request->filled('q')) {
             $searchTerm = $request->q;
             $query->where(function ($q) use ($searchTerm) {
@@ -20,86 +22,50 @@ class SearchController extends Controller
                   ->orWhere('description', 'like', "%{$searchTerm}%")
                   ->orWhere('city', 'like', "%{$searchTerm}%");
             });
+
+            // إعطاء أولوية للنتائج التي تطابق العنوان
+            $query->orderByRaw("CASE WHEN title LIKE ? THEN 1 ELSE 2 END", ["%{$searchTerm}%"]);
         }
-        
-        // Category filter
+
+        // الفلاتر
         if ($request->filled('category')) {
-            $query->whereHas('category', function ($q) use ($request) {
-                $q->where('slug', $request->category)
-                  ->orWhere('id', $request->category);
-            });
+            $query->whereHas('category', fn($q) => $q->where('slug', $request->category));
         }
         
-        // Price range
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->min_price);
-        }
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->max_price);
-        }
-        
-        // Condition
-        if ($request->filled('condition')) {
-            $query->where('condition', $request->condition);
-        }
-        
-        // City
-        if ($request->filled('city')) {
-            $query->where('city', $request->city);
-        }
-        
-        // Sort
+        $query->when($request->min_price, fn($q) => $q->where('price', '>=', $request->min_price))
+              ->when($request->max_price, fn($q) => $q->where('price', '<=', $request->max_price))
+              ->when($request->condition, fn($q) => $q->where('condition', $request->condition))
+              ->when($request->city, fn($q) => $q->where('city', $request->city));
+
+        // الترتيب
         $sort = $request->get('sort', 'newest');
-        switch ($sort) {
-            case 'oldest':
-                $query->oldest();
-                break;
-            case 'price_low':
-                $query->orderBy('price', 'asc');
-                break;
-            case 'price_high':
-                $query->orderBy('price', 'desc');
-                break;
-            default:
-                $query->latest();
-        }
-        
-        // Only active ads
-        $query->where('status', 'active');
-        
+        match ($sort) {
+            'oldest' => $query->oldest(),
+            'price_low' => $query->orderBy('price', 'asc'),
+            'price_high' => $query->orderBy('price', 'desc'),
+            default => $query->latest(),
+        };
+
         $ads = $query->paginate(24)->withQueryString();
         
-        // Get categories for filter
+        // جلب البيانات للقوائم المنسدلة
         $categories = Category::active()->root()->with('children')->get();
-        
-        // Get cities for filter (distinct cities from active ads)
-        $cities = Ad::where('status', 'active')
-            ->whereNotNull('city')
-            ->distinct()
-            ->pluck('city')
-            ->sort()
-            ->values();
-        
+        $cities = Ad::where('status', 'active')->whereNotNull('city')->distinct()->pluck('city')->sort();
+
         return view('search.index', compact('ads', 'categories', 'cities'));
     }
-    
+
     public function suggestions(Request $request)
     {
-        $request->validate([
-            'q' => 'required|string|min:2|max:50',
-        ]);
-        
         $searchTerm = $request->q;
-        
-        $suggestions = Ad::where('status', 'active')
-            ->where(function ($query) use ($searchTerm) {
-                $query->where('title', 'like', "%{$searchTerm}%")
-                      ->orWhere('city', 'like', "%{$searchTerm}%");
-            })
-            ->select('title', 'slug')
-            ->limit(5)
-            ->get();
-        
-        return response()->json($suggestions);
+        if (strlen($searchTerm) < 2) return response()->json([]);
+
+        return response()->json(
+            Ad::where('status', 'active')
+                ->where('title', 'like', "%{$searchTerm}%")
+                ->select('title', 'slug')
+                ->limit(6)
+                ->get()
+        );
     }
 }
