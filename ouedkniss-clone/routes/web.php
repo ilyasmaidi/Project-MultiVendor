@@ -16,8 +16,25 @@ use App\Http\Controllers\{
 };
 use App\Livewire\{Home, AdListing};
 
+
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\CheckoutController;
+
+
 // --- 1. Public Routes ---
 Route::get('/', Home::class)->name('home');
+
+
+
+
+
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/add/{id}', [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/remove/{key}', [CartController::class, 'remove'])->name('cart.remove');
+
+// مسار تحويل السلة لطلب رسمي في قاعدة البيانات
+Route::post('/checkout/confirm', [OrderController::class, 'store'])->name('orders.store');
 
 // Search
 Route::get('/search', [SearchController::class, 'index'])->name('search');

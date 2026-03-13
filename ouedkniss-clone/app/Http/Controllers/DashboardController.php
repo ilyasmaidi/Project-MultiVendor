@@ -7,6 +7,7 @@ use App\Models\Ad;
 use App\Models\Message;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Order;
 
 class DashboardController extends Controller
 {
@@ -23,6 +24,11 @@ class DashboardController extends Controller
             'total_views' => $user->ads()->sum('views_count') ?? 0,
             'unread_messages' => $user->messages()->whereNull('read_at')->count(),
             'favorites_count' => $user->favorites()->count() ?? 0,
+            
+            // إضافة المفتاح المفقود هنا لحل الخطأ
+            'new_orders_count' => Order::where('seller_id', $user->id)
+                                    ->where('status', 'pending')
+                                    ->count(),
         ];
         
         // Recent ads
@@ -32,10 +38,17 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
         
-        // Recent messages
+        // Recent messages (جلب الرسائل التي لم تُقرأ بعد)
         $recentMessages = $user->messages()
             ->with('sender', 'ad')
             ->whereNull('read_at')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        // جلب أحدث الطلبات (TRICO Orders) لعرضها في اللوحة
+        $recentOrders = Order::where('seller_id', $user->id)
+            ->with(['listing', 'buyer'])
             ->latest()
             ->take(5)
             ->get();
@@ -57,6 +70,7 @@ class DashboardController extends Controller
             'stats', 
             'recentAds', 
             'recentMessages', 
+            'recentOrders', // تمرير الطلبات للـ View
             'activity',
             'storeStats'
         ));
