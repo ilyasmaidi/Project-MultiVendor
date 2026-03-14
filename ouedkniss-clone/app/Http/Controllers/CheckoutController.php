@@ -3,83 +3,131 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
-use App\Models\Listing;
+use App\Models\Ad; // قمنا باعتماد Ad كموديل أساسي
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class CheckoutController extends Controller
 {
     /**
      * عرض صفحة إتمام الشراء (الدفع)
      */
-    public function index()
+    public function index(Request $request)
     {
-        $cart = session()->get('cart', []);
+        // 1. جلب المنتج باستخدام موديل Ad
+        $listing = Ad::findOrFail($request->ad_id);
+        
+        // 2. استلام الخيارات المختارة
+        $selectedSize = $request->query('size', 'M');
+        $selectedColor = $request->query('color', 'أسود');
 
-        if (empty($cart)) {
-            return redirect()->route('cart.index')->with('error', 'سلتك فارغة، لا يمكنك إتمام الشراء!');
-        }
+        // 3. تجهيز بيانات الجلسة
+        $cart = [[
+            'id'       => $listing->id,
+            'title'    => $listing->title,
+            'price'    => $listing->price,
+            'size'     => $selectedSize,
+            'color'    => $selectedColor,
+            // التأكد من جلب الصورة الأساسية
+            'image'    => $listing->images->where('is_primary', true)->first()->image_path ?? '',
+            'quantity' => 1
+        ]];
+
+        session(['cart' => $cart]);
 
         return view('checkout.index', compact('cart'));
     }
 
     /**
-     * معالجة وحفظ الطلب في قاعدة البيانات
+     * حفظ الطلب في قاعدة البيانات
      */
     public function store(Request $request)
     {
-        // 1. التحقق من بيانات المشتري (الهاتف والعنوان)
         $request->validate([
-            'phone'            => 'required|string',
+            'phone'            => 'required|string|min:10|max:15',
+            'city'             => 'required|string',
             'shipping_address' => 'required|string|min:10',
+            'notes'            => 'nullable|string|max:500',
         ]);
 
         $cart = session()->get('cart', []);
 
         if (empty($cart)) {
-            return redirect()->route('home')->with('error', 'حدث خطأ في الجلسة، السلة فارغة.');
+            return redirect()->route('home')->with('error', 'السلة فارغة.');
         }
 
-        // 2. استخدام Transaction لضمان حفظ كل شيء أو لا شيء (لحماية البيانات)
         DB::beginTransaction();
 
         try {
             foreach ($cart as $item) {
-                // جلب بيانات المنتج من قاعدة البيانات للتأكد من السعر والبائع
-                $listing = Listing::findOrFail($item['id']);
+                $ad = Ad::findOrFail($item['id']);
 
                 Order::create([
-                    'buyer_id'         => auth()->id(),            // معرف المشتري الحالي
-                    'listing_id'       => $item['id'],             // معرف قطعة الملابس
-                    'seller_id'        => $listing->user_id,       // صاحب القطعة (البائع)
-                    'size'             => $item['size'],           // المقاس المختار
-                    'color'            => $item['color'],          // اللون المختار
-                    'quantity'         => $item['quantity'],       // الكمية
+                    'buyer_id'         => auth()->id(),
+                    'listing_id'       => $item['id'],
+                    'seller_id'        => $ad->user_id, // تأكد أن الحقل في جدول ads هو user_id
+                    'size'             => $item['size'],
+                    'color'            => $item['color'],
+                    'quantity'         => $item['quantity'],
                     'total_price'      => $item['price'] * $item['quantity'],
-                    'status'           => 'pending',               // حالة الطلب (قيد الانتظار)
-                    'phone'            => $request->phone,         // هاتف المشتري
-                    'shipping_address' => $request->shipping_address, // عنوان التوصيل
+                    'status'           => 'pending',
+                    'phone'            => $request->phone,
+                    'city'             => $request->city,
+                    'shipping_address' => $request->shipping_address,
+                    'notes'            => $request->notes,
                 ]);
             }
 
             DB::commit();
-
-            // 3. مسح السلة بعد نجاح الطلب
             session()->forget('cart');
 
-            return redirect()->route('checkout.success')->with('success', 'تم تسجيل طلبك بنجاح في تريكو! سيتواصل معك البائع قريباً.');
+            return redirect()->route('checkout.success');
 
         } catch (\Exception $e) {
             DB::rollback();
-            return redirect()->back()->with('error', 'حدث خطأ أثناء معالجة الطلب: ' . $e->getMessage());
+            Log::error('Checkout Error: ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('error', 'خطأ: ' . $e->getMessage());
         }
     }
 
-    /**
-     * صفحة نجاح الطلب
-     */
     public function success()
     {
         return view('checkout.success');
     }
+
+    public function updateStatus(Request $request, Order $order)
+    {
+        if (auth()->id() !== $order->seller_id) abort(403);
+        $order->update(['status' => $request->status]);
+        return back()->with('success', 'تم التحديث');
+    }
+
+
+    public function myOrders()
+{
+    // جلب طلبات المستخدم الحالي مع بيانات الإعلان (listing)
+    $orders = Order::where('buyer_id', Auth::id())
+        ->with('listing') // تأكد من وجود علاقة listing في موديل Order
+        ->latest()
+        ->get();
+
+    return view('orders.index', compact('orders'));
+}
+
+    public function vendorOrders()
+    {
+        // جلب طلبات البائع الحالي مع بيانات الإعلان (listing) والمشتري (buyer)
+        $orders = Order::where('seller_id', Auth::id())
+            ->with(['listing', 'buyer']) // تأكد من وجود علاقات listing و buyer في موديل Order
+            ->latest()
+            ->get();
+
+        return view('vendor.orders.index', compact('orders'));
+    }
+
+
+
+
 }

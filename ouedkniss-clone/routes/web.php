@@ -12,31 +12,47 @@ use App\Http\Controllers\{
     SearchController,
     ProfileController,
     StoreSetupController,
-    VendorDashboardController
+    VendorDashboardController,
+    CartController,
+    OrderController,
+    CheckoutController // تأكد من استدعائه هنا
 };
 use App\Livewire\{Home, AdListing};
-
-
-use App\Http\Controllers\CartController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\CheckoutController;
-
 
 // --- 1. Public Routes ---
 Route::get('/', Home::class)->name('home');
 
+// --- 2. Checkout & Orders Routes (المسارات المضافة والمصلحة) ---
+Route::middleware(['auth'])->group(function () {
+    
+    // مسارات عملية الشراء (Checkout)
+    Route::prefix('checkout')->name('checkout.')->group(function () {
+        // هذا هو المسار الذي كان ناقصاً ويسبب الخطأ
+        Route::get('/', [CheckoutController::class, 'index'])->name('index'); 
+        
+        // مسار حفظ الطلب
+        Route::post('/store', [CheckoutController::class, 'store'])->name('store');
+        
+        // صفحة نجاح الطلب
+        Route::get('/success', [CheckoutController::class, 'success'])->name('success');
+    });
 
+    // مسارات طلبات المشتري
+    Route::get('/my-orders', [CheckoutController::class, 'myOrders'])->name('orders.index');
 
+    // مسارات البائع لإدارة الطلبات
+    Route::prefix('vendor/orders')->name('vendor.orders.')->group(function () {
+        Route::get('/', [CheckoutController::class, 'vendorOrders'])->name('index');
+        Route::patch('/{order}', [CheckoutController::class, 'updateStatus'])->name('update');
+    });
+});
 
-
+// --- 3. Cart Routes ---
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/add/{id}', [CartController::class, 'add'])->name('cart.add');
 Route::post('/cart/remove/{key}', [CartController::class, 'remove'])->name('cart.remove');
 
-// مسار تحويل السلة لطلب رسمي في قاعدة البيانات
-Route::post('/checkout/confirm', [OrderController::class, 'store'])->name('orders.store');
-
-// Search
+// --- 4. Search & General ---
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
 
@@ -45,14 +61,14 @@ Route::get('/categories', [CategoryController::class, 'index'])->name('categorie
 Route::get('/stores', [StoreController::class, 'index'])->name('stores.index');
 Route::get('/stores/{slug}', [StoreController::class, 'show'])->name('stores.show');
 
-// Ads (قمت بترتيبها لمنع التضارب)
+// Ads Management (ترتيب المسارات هام جداً)
 Route::get('/ads', [AdController::class, 'index'])->name('ads.index');
 Route::get('/category/{slug}', AdListing::class)->name('ads.by-category');
-// ملاحظة: تأكد أن {slug} في الأسفل لا يتعارض مع المسارات الثابتة
+Route::get('/ads/create/new', [AdController::class, 'create'])->name('ads.create')->middleware('auth'); 
 Route::get('/ads/{slug}', [AdController::class, 'show'])->name('ads.show');
 
 
-// --- 2. Authenticated Routes ---
+// --- 5. Authenticated Dashboard & Management ---
 Route::middleware(['auth'])->group(function () {
 
     // Dashboard
@@ -62,9 +78,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/activity', [DashboardController::class, 'activity'])->name('dashboard.activity');
     });
 
-    // Ads Management
+    // Ads CRUD
     Route::get('/my-ads', [AdController::class, 'myAds'])->name('my-ads');
-    Route::get('/ads/create/new', [AdController::class, 'create'])->name('ads.create'); // تم تغيير المسار قليلاً لمنع التضارب مع {slug}
     Route::post('/ads', [AdController::class, 'store'])->name('ads.store');
     Route::get('/ads/{ad}/edit', [AdController::class, 'edit'])->name('ads.edit');
     Route::put('/ads/{ad}', [AdController::class, 'update'])->name('ads.update');
@@ -99,7 +114,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
 
-    // Store Setup (للمستخدمين العاديين ليصبحوا تجار)
+    // Store Setup
     Route::prefix('store-setup')->group(function () {
         Route::get('/', [StoreSetupController::class, 'index'])->name('store.setup');
         Route::post('/basic', [StoreSetupController::class, 'storeBasic'])->name('store.setup.basic');
@@ -107,7 +122,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/contact', [StoreSetupController::class, 'storeContact'])->name('store.setup.contact');
     });
 
-    // Vendor Panel (للتجار فقط)
+    // Vendor Panel
     Route::prefix('vendor')->group(function () {
         Route::get('/dashboard', [VendorDashboardController::class, 'index'])->name('vendor.dashboard');
         Route::get('/analytics', [VendorDashboardController::class, 'analytics'])->name('vendor.analytics');
@@ -117,7 +132,7 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-// --- 3. Static Pages ---
+// --- 6. Static Pages ---
 Route::view('/help', 'pages.help')->name('help');
 Route::view('/terms', 'pages.terms')->name('terms');
 Route::view('/privacy', 'pages.privacy')->name('privacy');

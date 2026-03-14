@@ -14,19 +14,26 @@ public function up(): void
 {
     Schema::create('orders', function (Blueprint $table) {
         $table->id();
-        $table->foreignId('buyer_id')->constrained('users'); 
-        $table->foreignId('listing_id')->constrained('listings'); 
-        $table->foreignId('seller_id')->constrained('users'); 
-        $table->string('size'); // مقاس الملابس
-        $table->string('color'); // لون القطعة
+        $table->foreignId('buyer_id')->constrained('users');
+        $table->foreignId('listing_id')->constrained('ads'); // أو اسم جدول الإعلانات عندك
+        $table->foreignId('seller_id')->constrained('users');
+        
+        $table->string('size');
+        $table->string('color');
         $table->integer('quantity')->default(1);
-        $table->decimal('total_price', 15, 2);
-        $table->string('status')->default('pending'); // pending, shipping, completed, cancelled
+        $table->decimal('total_price', 10, 2);
+        
+        $table->string('status')->default('pending');
         $table->string('phone');
+        
+        // --- الحقول التي تسببت في الخطأ ---
+        $table->string('city'); 
         $table->text('shipping_address');
+        $table->text('notes')->nullable(); 
+        // ---------------------------------
+
         $table->timestamps();
     });
-
 }
 
     /**

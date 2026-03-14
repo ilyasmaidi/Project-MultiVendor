@@ -10,10 +10,6 @@ class Order extends Model
 {
     use HasFactory;
 
-    /**
-     * الحقول القابلة للتعبئة (Fillable)
-     * ملاحظة: بفضل الـ indexer، سيتعرف VS Code على هذه الحقول فوراً
-     */
     protected $fillable = [
         'buyer_id',
         'listing_id',
@@ -23,12 +19,14 @@ class Order extends Model
         'quantity',
         'total_price',
         'status',
-        'shipping_address',
         'phone',
+        'city',
+        'shipping_address',
+        'notes',
     ];
 
     /**
-     * علاقة الطلب بالمشتري (الذي قام بعملية الشراء)
+     * علاقة الطلب بالمشتري
      */
     public function buyer(): BelongsTo
     {
@@ -36,7 +34,7 @@ class Order extends Model
     }
 
     /**
-     * علاقة الطلب بالبائع (صاحب قطعة الملابس)
+     * علاقة الطلب بالبائع
      */
     public function seller(): BelongsTo
     {
@@ -44,19 +42,27 @@ class Order extends Model
     }
 
     /**
-     * علاقة الطلب بالمنتج (قطعة الملابس من جدول Listings)
+     * علاقة الطلب بالمنتج
+     * تم التعديل للإشارة إلى Ad::class بدلاً من Listing
      */
     public function listing(): BelongsTo
-{
-    // إذا كان اسم الموديل Ad
-    return $this->belongsTo(Ad::class, 'listing_id'); 
-}
+    {
+        // نستخدم Ad هنا لأن هذا هو اسم الموديل في مشروعك
+        return $this->belongsTo(Ad::class, 'listing_id');
+    }
 
     /**
-     * دالة مساعدة لحساب السعر الإجمالي تلقائياً إذا أردت ذلك مستقبلاً
+     * دالة مساعدة للحصول على لون الحالة (Status Badge)
      */
-    public function calculateTotal()
+    public function getStatusColorAttribute()
     {
-        return $this->quantity * $this->listing->price;
+        return match($this->status) {
+            'pending'   => 'zinc-500',
+            'processing'=> 'blue-500',
+            'shipped'   => 'emerald-500',
+            'delivered' => 'emerald-600',
+            'cancelled' => 'red-500',
+            default     => 'zinc-400',
+        };
     }
 }

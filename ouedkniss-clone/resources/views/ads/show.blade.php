@@ -83,7 +83,7 @@
                         </div>
                     </div>
 
-                    {{-- بطاقة البائع: متوازنة تماماً --}}
+                    {{-- بطاقة البائع --}}
                     <div class="p-6 rounded-[2rem] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between shadow-sm group hover:border-emerald-500/50 transition-colors">
                         <div class="flex items-center gap-4">
                             <div class="w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800">
@@ -107,23 +107,65 @@
                         </p>
                     </div>
 
-                    {{-- الأزرار: ألوان صلبة للوضوح --}}
-                    <div class="space-y-4 pt-10">
-                        @if($ad->contact_whatsapp)
-                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $ad->contact_whatsapp) }}" 
-                           class="flex items-center justify-center gap-3 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all shadow-lg shadow-emerald-600/20">
-                            <i class="fab fa-whatsapp text-lg"></i> تواصل عبر واتساب
-                        </a>
-                        @endif
+                    {{-- قسم الشراء التفاعلي --}}
+                    <div class="space-y-8 pt-10 border-t border-zinc-100 dark:border-zinc-800/50">
+                        
+                        {{-- فورم الشراء السريع --}}
+                        <form action="{{ route('checkout.index') }}" method="GET" class="space-y-6">
+                            <div class="grid grid-cols-2 gap-4">
+                                {{-- اختيار المقاس --}}
+                                <div class="space-y-2">
+                                    <label class="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400 mr-2">المقاس</label>
+                                    <select name="size" required class="w-full bg-zinc-100 dark:bg-white/5 border-transparent rounded-xl py-4 px-4 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500 transition-all outline-none">
+                                        <option value="S">Small (S)</option>
+                                        <option value="M" selected>Medium (M)</option>
+                                        <option value="L">Large (L)</option>
+                                        <option value="XL">Extra Large (XL)</option>
+                                    </select>
+                                </div>
 
-                        <div class="grid grid-cols-2 gap-4">
-                            @if($ad->contact_phone)
-                            <a href="tel:{{ $ad->contact_phone }}" class="flex items-center justify-center bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all hover:opacity-90">
-                                اتصل الآن
-                            </a>
-                            @endif
-                            <button class="flex items-center justify-center border-2 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-white dark:hover:bg-zinc-800 transition-all">
-                                حفظ القطعة
+                                {{-- اختيار اللون --}}
+                                <div class="space-y-2">
+                                    <label class="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400 mr-2">اللون</label>
+                                    <select name="color" required class="w-full bg-zinc-100 dark:bg-white/5 border-transparent rounded-xl py-4 px-4 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500 transition-all outline-none">
+                                        <option value="أسود">أسود</option>
+                                        <option value="أبيض">أبيض</option>
+                                        <option value="أزرق">أزرق</option>
+                                        <option value="رمادي">رمادي</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <input type="hidden" name="ad_id" value="{{ $ad->id }}">
+
+                            {{-- زر اشتري الآن الرئيسي --}}
+                            <button type="submit" class="group relative flex items-center justify-center gap-4 w-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 py-6 rounded-2xl font-black text-[12px] uppercase tracking-[0.3em] transition-all hover:bg-emerald-500 hover:text-white shadow-2xl shadow-zinc-900/20 dark:shadow-none overflow-hidden">
+                                <span class="relative z-10 flex items-center gap-3">
+                                    اشتري الآن <i class="fa-solid fa-bag-shopping text-lg"></i>
+                                </span>
+                                <div class="absolute inset-0 bg-emerald-600 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+                            </button>
+                        </form>
+
+                        {{-- أزرار التواصل والحفظ --}}
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                @if($ad->contact_whatsapp)
+                                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $ad->contact_whatsapp) }}" 
+                                   class="flex items-center justify-center gap-2 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 hover:text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-emerald-500/20 shadow-sm">
+                                    <i class="fab fa-whatsapp text-sm"></i> واتساب
+                                </a>
+                                @endif
+
+                                @if($ad->contact_phone)
+                                <a href="tel:{{ $ad->contact_phone }}" class="flex items-center justify-center bg-zinc-100 dark:bg-white/5 text-zinc-900 dark:text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all hover:bg-zinc-200 dark:hover:bg-white/10">
+                                    <i class="fa-solid fa-phone-flip ml-2 text-[10px]"></i> اتصل الآن
+                                </a>
+                                @endif
+                            </div>
+
+                            <button class="w-full py-4 text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.4em] hover:text-emerald-500 transition-colors">
+                                <i class="far fa-bookmark ml-2"></i> حفظ القطعة للمراجعة
                             </button>
                         </div>
                     </div>
@@ -138,11 +180,18 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
-    /* خطوط متجانسة للوضع الاحترافي */
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;800&family=Cairo:wght@400;700;900&display=swap');
     
     body { 
         font-family: 'Plus Jakarta Sans', 'Cairo', sans-serif;
+    }
+
+    select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: left 1rem center;
+        background-size: 1em;
     }
 </style>
 @endsection
