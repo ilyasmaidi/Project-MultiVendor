@@ -44,53 +44,56 @@ class CheckoutController extends Controller
      * حفظ الطلب في قاعدة البيانات
      */
     public function store(Request $request)
-    {
-        $request->validate([
-            'phone'            => 'required|string|min:10|max:15',
-            'city'             => 'required|string',
-            'shipping_address' => 'required|string|min:10',
-            'notes'            => 'nullable|string|max:500',
-        ]);
+{
+    // 1. التحقق من البيانات
+    $request->validate([
+        'phone'            => 'required|string|min:10|max:15',
+        'city'             => 'required|string',
+        'shipping_address' => 'required|string|min:10',
+        'notes'            => 'nullable|string|max:500',
+    ]);
 
-        $cart = session()->get('cart', []);
+    $cart = session()->get('cart', []);
 
-        if (empty($cart)) {
-            return redirect()->route('home')->with('error', 'السلة فارغة، يرجى اختيار منتج أولاً.');
-        }
-
-        DB::beginTransaction();
-
-        try {
-            foreach ($cart as $item) {
-                $ad = Ad::findOrFail($item['id']);
-
-                Order::create([
-                    'buyer_id'         => Auth::id(), // المشتري هو المستخدم الحالي
-                    'listing_id'       => $item['id'],
-                    'seller_id'        => $ad->user_id, // البائع هو صاحب الإعلان
-                    'size'             => $item['size'],
-                    'color'            => $item['color'],
-                    'quantity'         => $item['quantity'],
-                    'total_price'      => $item['price'] * $item['quantity'],
-                    'status'           => 'pending',
-                    'phone'            => $request->phone,
-                    'city'             => $request->city,
-                    'shipping_address' => $request->shipping_address,
-                    'notes'            => $request->notes,
-                ]);
-            }
-
-            DB::commit();
-            session()->forget('cart');
-
-            return redirect()->route('checkout.success');
-
-        } catch (\Exception $e) {
-            DB::rollback();
-            Log::error('Checkout Error: ' . $e->getMessage());
-            return redirect()->back()->withInput()->with('error', 'حدث خطأ أثناء معالجة الطلب: ' . $e->getMessage());
-        }
+    if (empty($cart)) {
+        return redirect()->route('home')->with('error', 'السلة فارغة.');
     }
+
+    DB::beginTransaction();
+
+    try {
+        foreach ($cart as $item) {
+            // --- السطر الناقص كان هنا: جلب بيانات الإعلان من قاعدة البيانات ---
+            $ad = \App\Models\Ad::findOrFail($item['id']); 
+
+            \App\Models\Order::create([
+                'buyer_id'         => Auth::id(),
+                'listing_id'       => $ad->id,
+                'seller_id'        => $ad->user_id, // الآن $ad معرف ولن يظهر الخطأ
+                'size'             => $item['size'],
+                'color'            => $item['color'],
+                'quantity'         => $item['quantity'],
+                'total_price'      => $ad->price * $item['quantity'],
+                'status'           => 'pending',
+                'phone'            => $request->phone,
+                'city'             => $request->city,
+                'shipping_address' => $request->shipping_address,
+                'notes'            => $request->notes,
+            ]);
+        }
+
+        DB::commit();
+        session()->forget('cart');
+
+        return redirect()->route('checkout.success');
+
+    } catch (\Exception $e) {
+        DB::rollback();
+        \Illuminate\Support\Facades\Log::error('Checkout Error: ' . $e->getMessage());
+        return redirect()->back()->withInput()->with('error', 'حدث خطأ: ' . $e->getMessage());
+    }
+}
+
 
     public function success()
     {

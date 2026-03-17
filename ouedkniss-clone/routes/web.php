@@ -25,9 +25,9 @@ Route::get('/categories', [CategoryController::class, 'index'])->name('categorie
 Route::get('/stores', [StoreController::class, 'index'])->name('stores.index');
 Route::get('/stores/{slug}', [StoreController::class, 'show'])->name('stores.show');
 
+// ملاحظة: تم ترك ads.index هنا، ولكن تم نقل ads.show للأسفل لتجنب التعارض مع create
 Route::get('/ads', [AdController::class, 'index'])->name('ads.index');
 Route::get('/category/{slug}', AdListing::class)->name('ads.by-category');
-Route::get('/ads/{slug}', [AdController::class, 'show'])->name('ads.show');
 
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/add/{id}', [CartController::class, 'add'])->name('cart.add');
@@ -39,6 +39,10 @@ Route::post('/cart/remove/{key}', [CartController::class, 'remove'])->name('cart
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
+
+    // إدارة الإعلانات (تم نقلها هنا لضمان أولوية /ads/create على /ads/{slug})
+    Route::get('/my-ads', [AdController::class, 'myAds'])->name('my-ads');
+    Route::resource('ads', AdController::class)->except(['index', 'show']);
 
     // نظام المشتري والطلبات الشخصية
     Route::prefix('checkout')->name('checkout.')->group(function () {
@@ -54,10 +58,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
     });
-
-    // إدارة الإعلانات والملف الشخصي
-    Route::get('/my-ads', [AdController::class, 'myAds'])->name('my-ads');
-    Route::resource('ads', AdController::class)->except(['index', 'show']);
 
     Route::prefix('messages')->name('messages.')->group(function () {
         Route::get('/', [MessageController::class, 'index'])->name('index');
@@ -90,6 +90,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [VendorDashboardController::class, 'index'])->name('dashboard');
         Route::get('/analytics', [VendorDashboardController::class, 'analytics'])->name('analytics');
         Route::get('/store/settings', [VendorDashboardController::class, 'storeSettings'])->name('store.settings');
+        Route::put('/store/update', [VendorDashboardController::class, 'updateStore'])->name('store.update');
+
+        // مسار إدارة الإعلانات الخاص بالبائع
+        Route::get('/ads/manage', [VendorDashboardController::class, 'manageAds'])->name('ads.manage');
+
         Route::get('/orders', [CheckoutController::class, 'vendorOrders'])->name('orders.index');
         Route::patch('/orders/{order}', [CheckoutController::class, 'updateStatus'])->name('orders.update');
     });
@@ -100,8 +105,6 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('admin')->name('admin.')->group(function () {
-        
-        // نظام إدارة الطلبات المركزي
         Route::prefix('orders')->name('orders.')->group(function () {
             Route::get('/', OrderIndex::class)->name('index');
             Route::get('/{order}', OrderShow::class)->name('show'); 
@@ -110,15 +113,18 @@ Route::middleware(['auth'])->group(function () {
 
 });
 
-
-
+/*
+|--------------------------------------------------------------------------
+| إرجاع مسار التفاصيل (Show) إلى هنا لضمان عدم حدوث تضارب
+|--------------------------------------------------------------------------
+*/
+Route::get('/ads/{slug}', [AdController::class, 'show'])->name('ads.show');
 
 /*
 |--------------------------------------------------------------------------
 | 4. صفحات المعلومات (Static Pages)
 |--------------------------------------------------------------------------
 */
-// تأكد أن الأسماء (->name) تطابق ما يناديه الـ Footer
 Route::view('/help', 'pages.help')->name('help');
 Route::view('/safety', 'pages.safety')->name('safety');
 Route::view('/terms', 'pages.terms')->name('terms');

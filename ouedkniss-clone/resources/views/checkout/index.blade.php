@@ -23,19 +23,22 @@
                 <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 lg:p-12 rounded-[3rem] shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-l from-emerald-500 to-transparent opacity-50"></div>
 
-                    {{-- عرض رسائل الخطأ العامة إن وجدت --}}
+                    {{-- عرض رسائل الخطأ العامة --}}
                     @if(session('error'))
                         <div class="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl text-sm font-bold">
                             {{ session('error') }}
                         </div>
                     @endif
 
-                    <form action="{{ route('checkout.store') }}" method="POST" class="space-y-8" onsubmit="confirmBtn.disabled=true; confirmBtn.classList.add('opacity-50');">
+                    <form action="{{ route('checkout.store') }}" method="POST" class="space-y-8" id="checkoutForm">
                         @csrf
                         
-                        {{-- الحقل المخفي لتعريف المنتج --}}
+                        {{-- الحقول المخفية لضمان إرسال بيانات المنتج كاملة --}}
                         @foreach($cart as $item)
                             <input type="hidden" name="ad_id" value="{{ $item['id'] }}">
+                            <input type="hidden" name="size" value="{{ $item['size'] }}">
+                            <input type="hidden" name="color" value="{{ $item['color'] }}">
+                            <input type="hidden" name="quantity" value="{{ $item['quantity'] }}">
                         @endforeach
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -54,17 +57,20 @@
                             {{-- الولاية --}}
                             <div class="space-y-3">
                                 <label class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mr-2">الولاية</label>
-                                <select name="city" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border-2 border-transparent focus:border-emerald-500 rounded-2xl py-5 px-6 text-zinc-900 dark:text-white font-bold transition-all outline-none appearance-none cursor-pointer">
-                                    <option value="الجزائر" {{ old('city') == 'الجزائر' ? 'selected' : '' }}>الجزائر العاصمة</option>
-                                    <option value="وهران" {{ old('city') == 'وهران' ? 'selected' : '' }}>وهران</option>
-                                    <option value="قسنطينة" {{ old('city') == 'قسنطينة' ? 'selected' : '' }}>قسنطينة</option>
-                                    <option value="عنابة" {{ old('city') == 'عنابة' ? 'selected' : '' }}>عنابة</option>
-                                    <option value="سطيف" {{ old('city') == 'سطيف' ? 'selected' : '' }}>سطيف</option>
-                                </select>
+                                <div class="relative">
+                                    <select name="city" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border-2 border-transparent focus:border-emerald-500 rounded-2xl py-5 px-6 text-zinc-900 dark:text-white font-bold transition-all outline-none appearance-none cursor-pointer">
+                                        <option value="الجزائر" {{ old('city') == 'الجزائر' ? 'selected' : '' }}>الجزائر العاصمة</option>
+                                        <option value="وهران" {{ old('city') == 'وهران' ? 'selected' : '' }}>وهران</option>
+                                        <option value="قسنطينة" {{ old('city') == 'قسنطينة' ? 'selected' : '' }}>قسنطينة</option>
+                                        <option value="عنابة" {{ old('city') == 'عنابة' ? 'selected' : '' }}>عنابة</option>
+                                        <option value="سطيف" {{ old('city') == 'سطيف' ? 'selected' : '' }}>سطيف</option>
+                                    </select>
+                                    <i class="fas fa-chevron-down absolute left-6 top-1/2 -translate-y-1/2 text-zinc-300 dark:text-zinc-700 text-xs pointer-events-none"></i>
+                                </div>
                             </div>
                         </div>
 
-                        {{-- العنوان الكامل --}}
+                        {{-- العنوان الكامل (هذا هو الحقل الذي كان يسبب المشكلة) --}}
                         <div class="space-y-3">
                             <label class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mr-2">العنوان التفصيلي (البلدية، الشارع، رقم المنزل)</label>
                             <textarea name="shipping_address" 
@@ -145,7 +151,7 @@
 
                     <div class="flex items-center gap-4 px-8 text-zinc-400 dark:text-zinc-600">
                         <i class="fas fa-shield-alt text-2xl opacity-20"></i>
-                        <p class="text-[10px] font-bold leading-relaxed italic uppercase">حق المعاينة مكفول قبل الدفع. تسوق بكل ثقة مع تريكو.</p>
+                        <p class="text-[10px] font-bold leading-relaxed italic uppercase leading-4">حق المعاينة مكفول قبل الدفع. تسوق بكل ثقة مع تريكو.</p>
                     </div>
                 </div>
             </div>
@@ -153,4 +159,14 @@
         </div>
     </div>
 </div>
+
+<script>
+    // تفعيل تعطيل الزر عند الإرسال لمنع التكرار
+    document.getElementById('checkoutForm').onsubmit = function() {
+        let btn = document.getElementById('confirmBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="relative z-10 flex items-center gap-3 italic">جاري معالجة طلبك...</span>';
+        btn.classList.add('opacity-70', 'cursor-not-allowed');
+    };
+</script>
 @endsection

@@ -4,6 +4,7 @@
 @section('page-title', 'نظرة عامة')
 
 @section('content')
+    {{-- بطاقات الإحصائيات --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="card stat-card p-5">
             <div class="flex items-center justify-between mb-3">
@@ -81,6 +82,7 @@
     
     <div class="grid lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
+            {{-- قسم أحدث طلبات البيع - هنا تم الإصلاح --}}
             <div class="card p-6 border-t-4 border-indigo-500">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="font-bold text-lg">أحدث طلبات البيع</h3>
@@ -96,7 +98,8 @@
                                         <i class="fa-solid fa-shirt"></i>
                                     </div>
                                     <div>
-                                        <h4 class="font-bold text-sm">{{ $order->listing->title }}</h4>
+                                        {{-- تم استخدام الـ Null Safe Operator هنا لمنع الخطأ --}}
+                                        <h4 class="font-bold text-sm">{{ $order->listing?->title ?? 'منتج غير متوفر حالياً' }}</h4>
                                         <div class="flex gap-2 mt-1">
                                             <span class="text-[10px] bg-white/10 px-2 py-0.5 rounded text-gray-400">S: {{ $order->size }}</span>
                                             <span class="text-[10px] bg-white/10 px-2 py-0.5 rounded text-gray-400">C: {{ $order->color }}</span>
@@ -104,7 +107,7 @@
                                     </div>
                                 </div>
                                 <div class="text-left text-xs text-gray-500">
-                                    <p class="font-black text-emerald-400 text-base">{{ $order->total_price }} د.ج</p>
+                                    <p class="font-black text-emerald-400 text-base">{{ number_format($order->total_price) }} د.ج</p>
                                     <p>{{ $order->created_at->diffForHumans() }}</p>
                                 </div>
                             </div>
@@ -115,6 +118,7 @@
                 @endif
             </div>
 
+            {{-- إعلاناتي الحديثة --}}
             <div class="card p-6">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="font-bold text-lg">إعلاناتي الحديثة</h3>
@@ -126,7 +130,8 @@
                 @forelse($recentAds as $ad)
                     <div class="flex items-center gap-4 p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors mb-3">
                         <div class="w-16 h-16 rounded-lg bg-emerald-500/10 flex items-center justify-center overflow-hidden">
-                            @if($ad->images->first())
+                            {{-- التحقق من وجود صورة الإعلان --}}
+                            @if($ad->images && $ad->images->first())
                                 <img src="{{ asset('storage/' . $ad->images->first()->image_path) }}" class="w-full h-full object-cover">
                             @else
                                 <i class="fa-solid fa-image text-emerald-400"></i>
@@ -154,6 +159,7 @@
         </div>
         
         <div class="space-y-6">
+            {{-- الرسائل الجديدة --}}
             <div class="card p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-bold">رسائل جديدة</h3>
@@ -161,12 +167,12 @@
                 </div>
                 
                 @forelse($recentMessages as $message)
-                    <a href="{{ route('messages.show', ['user' => $message->sender->id]) }}" class="flex items-start gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors mb-2">
+                    <a href="{{ route('messages.show', ['user' => $message->sender?->id]) }}" class="flex items-start gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors mb-2">
                         <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
                             <i class="fa-solid fa-user text-emerald-400 text-xs"></i>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="font-bold text-xs truncate">{{ $message->sender->name }}</p>
+                            <p class="font-bold text-xs truncate">{{ $message->sender?->name ?? 'مستخدم غير معروف' }}</p>
                             <p class="text-[10px] text-gray-500 truncate">{{ Str::limit($message->content, 35) }}</p>
                         </div>
                         @if(!$message->read_at)
@@ -178,6 +184,7 @@
                 @endforelse
             </div>
             
+            {{-- إجراءات سريعة --}}
             <div class="card p-6">
                 <h3 class="font-bold mb-4">إجراءات سريعة</h3>
                 <div class="space-y-2">

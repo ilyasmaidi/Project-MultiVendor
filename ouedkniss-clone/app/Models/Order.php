@@ -11,9 +11,19 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
-        'buyer_id', 'listing_id', 'seller_id', 'size', 'color', 
-        'quantity', 'total_price', 'status', 'phone', 'city'
-    ];
+    'buyer_id',
+    'listing_id',
+    'seller_id',
+    'size',
+    'color',
+    'quantity',
+    'total_price',
+    'status',
+    'phone',
+    'city',
+    'shipping_address', // <--- تأكد من كتابتها هنا بشكل صحيح
+    'notes',
+];
 
     public function listing(): BelongsTo {
         return $this->belongsTo(Ad::class, 'listing_id');
