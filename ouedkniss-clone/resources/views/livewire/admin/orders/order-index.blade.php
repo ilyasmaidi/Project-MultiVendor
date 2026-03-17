@@ -34,7 +34,6 @@
                     </div>
                 </div>
             </div>
-            {{-- يمكنك إضافة المزيد من الكروت هنا مثل "قيد الانتظار" أو "المبيعات اليومية" --}}
         </div>
 
         {{-- حاوية الجدول --}}
@@ -80,12 +79,44 @@
                                     {{ number_format($order->total_price) }} <span class="text-[10px] font-normal text-slate-400 uppercase">د.ج</span>
                                 </span>
                             </td>
+                            
+                            {{-- عمود حالة الطلب التفاعلي --}}
                             <td class="p-5 text-center">
-                                <span class="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold border {{ $order->status_color }}">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-current ml-2"></span>
-                                    {{ $order->status_label }}
-                                </span>
+                                @if(auth()->user()->role === 'admin' || $order->seller_id === auth()->id())
+                                    <div class="relative inline-block w-40" wire:key="status-{{ $order->id }}">
+                                        <select 
+                                            wire:change="updateStatus({{ $order->id }}, $event.target.value)"
+                                            class="block w-full px-3 py-2 text-[11px] font-black border-none rounded-xl cursor-pointer focus:ring-2 focus:ring-orange-500/20 transition-all appearance-none text-center
+                                            @if($order->status == 'pending') bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400
+                                            @elseif($order->status == 'processing') bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400
+                                            @elseif($order->status == 'shipped') bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400
+                                            @elseif($order->status == 'delivered') bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400
+                                            @elseif($order->status == 'cancelled') bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400
+                                            @endif"
+                                        >
+                                            <option value="pending" {{ $order->status == 'pending' ? 'selected' : '' }}>⏳ قيد الانتظار</option>
+                                            <option value="processing" {{ $order->status == 'processing' ? 'selected' : '' }}>⚙️ جاري التحضير</option>
+                                            <option value="shipped" {{ $order->status == 'shipped' ? 'selected' : '' }}>🚚 تم الشحن</option>
+                                            <option value="delivered" {{ $order->status == 'delivered' ? 'selected' : '' }}>✅ تم التسليم</option>
+                                            <option value="cancelled" {{ $order->status == 'cancelled' ? 'selected' : '' }}>❌ ملغي</option>
+                                        </select>
+                                        {{-- سهم صغير مخصص للقائمة --}}
+                                        <div class="absolute inset-y-0 left-2 flex items-center pointer-events-none opacity-40">
+                                            <i class="fas fa-chevron-down text-[9px]"></i>
+                                        </div>
+                                        {{-- مؤشر تحميل يظهر عند التحديث --}}
+                                        <div wire:loading wire:target="updateStatus({{ $order->id }}, ...)" class="absolute -right-6 top-2">
+                                            <i class="fas fa-circle-notch fa-spin text-orange-500 text-xs"></i>
+                                        </div>
+                                    </div>
+                                @else
+                                    <span class="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold border {{ $order->status_color }}">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-current ml-2"></span>
+                                        {{ $order->status_label }}
+                                    </span>
+                                @endif
                             </td>
+
                             <td class="p-5 text-center">
                                 <a href="{{ route('admin.orders.show', $order->id) }}" 
                                     class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all shadow-sm">
