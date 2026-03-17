@@ -327,20 +327,27 @@ namespace App\Models{
  * @property numeric $total_price
  * @property string $status
  * @property string $phone
+ * @property string $city
  * @property string $shipping_address
+ * @property string|null $notes
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Ad $ad
  * @property-read \App\Models\User $buyer
+ * @property-read string $status_color
+ * @property-read string $status_label
  * @property-read \App\Models\Ad $listing
  * @property-read \App\Models\User $seller
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereBuyerId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereCity($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereColor($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereListingId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereNotes($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order wherePhone($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereQuantity($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereSellerId($value)

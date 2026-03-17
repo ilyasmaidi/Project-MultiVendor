@@ -86,10 +86,9 @@ class User extends Authenticatable
         return $this->hasMany(Favorite::class);
     }
 
-    public function isAdmin(): bool
-    {
-        return $this->role === 'admin' || $this->hasRole('admin');
-    }
+    public function isAdmin() {
+    return $this->role === 'admin'; // أو حسب الحقل عندك
+}
 
     public function isVendor(): bool
     {
@@ -140,4 +139,6 @@ class User extends Authenticatable
     {
         $this->update(['last_login_at' => now()]);
     }
+
+    
 }

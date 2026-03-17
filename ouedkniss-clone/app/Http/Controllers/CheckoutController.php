@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
-use App\Models\Ad; // قمنا باعتماد Ad كموديل أساسي
+use App\Models\Ad;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -12,25 +12,25 @@ use Illuminate\Support\Facades\Auth;
 class CheckoutController extends Controller
 {
     /**
-     * عرض صفحة إتمام الشراء (الدفع)
+     * عرض صفحة إتمام الشراء
      */
     public function index(Request $request)
     {
-        // 1. جلب المنتج باستخدام موديل Ad
+        // التحقق من وجود معرف الإعلان
+        $request->validate(['ad_id' => 'required|exists:ads,id']);
+
         $listing = Ad::findOrFail($request->ad_id);
         
-        // 2. استلام الخيارات المختارة
         $selectedSize = $request->query('size', 'M');
         $selectedColor = $request->query('color', 'أسود');
 
-        // 3. تجهيز بيانات الجلسة
+        // تجهيز بيانات السلة في الجلسة
         $cart = [[
             'id'       => $listing->id,
             'title'    => $listing->title,
             'price'    => $listing->price,
             'size'     => $selectedSize,
             'color'    => $selectedColor,
-            // التأكد من جلب الصورة الأساسية
             'image'    => $listing->images->where('is_primary', true)->first()->image_path ?? '',
             'quantity' => 1
         ]];
@@ -55,7 +55,7 @@ class CheckoutController extends Controller
         $cart = session()->get('cart', []);
 
         if (empty($cart)) {
-            return redirect()->route('home')->with('error', 'السلة فارغة.');
+            return redirect()->route('home')->with('error', 'السلة فارغة، يرجى اختيار منتج أولاً.');
         }
 
         DB::beginTransaction();
@@ -65,9 +65,9 @@ class CheckoutController extends Controller
                 $ad = Ad::findOrFail($item['id']);
 
                 Order::create([
-                    'buyer_id'         => auth()->id(),
+                    'buyer_id'         => Auth::id(), // المشتري هو المستخدم الحالي
                     'listing_id'       => $item['id'],
-                    'seller_id'        => $ad->user_id, // تأكد أن الحقل في جدول ads هو user_id
+                    'seller_id'        => $ad->user_id, // البائع هو صاحب الإعلان
                     'size'             => $item['size'],
                     'color'            => $item['color'],
                     'quantity'         => $item['quantity'],
@@ -88,7 +88,7 @@ class CheckoutController extends Controller
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Checkout Error: ' . $e->getMessage());
-            return redirect()->back()->withInput()->with('error', 'خطأ: ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('error', 'حدث خطأ أثناء معالجة الطلب: ' . $e->getMessage());
         }
     }
 
@@ -97,37 +97,52 @@ class CheckoutController extends Controller
         return view('checkout.success');
     }
 
+    /**
+     * تحديث حالة الطلب (خاص بالبائع)
+     */
     public function updateStatus(Request $request, Order $order)
     {
-        if (auth()->id() !== $order->seller_id) abort(403);
+        // التحقق أن المستخدم الحالي هو البائع الفعلي لهذا الطلب
+        if (Auth::id() !== $order->seller_id) {
+            abort(403, 'غير مصرح لك بتعديل هذا الطلب.');
+        }
+
+        $request->validate([
+            'status' => 'required|in:pending,processing,shipped,completed,cancelled'
+        ]);
+
         $order->update(['status' => $request->status]);
-        return back()->with('success', 'تم التحديث');
+
+        return back()->with('success', 'تم تحديث حالة الطلب بنجاح.');
     }
 
-
+    /**
+     * عرض طلبات المشتري (طلباتي)
+     */
     public function myOrders()
-{
-    // جلب طلبات المستخدم الحالي مع بيانات الإعلان (listing)
-    $orders = Order::where('buyer_id', Auth::id())
-        ->with('listing') // تأكد من وجود علاقة listing في موديل Order
-        ->latest()
-        ->get();
+    {
+        $orders = Order::where('buyer_id', Auth::id())
+            ->with(['listing' => function($q) {
+                $q->withTrashed(); // لجلب البيانات حتى لو حُذف الإعلان
+            }])
+            ->latest()
+            ->get();
 
-    return view('orders.index', compact('orders'));
-}
+        return view('orders.index', compact('orders'));
+    }
 
+    /**
+     * عرض طلبات الزبائن (لوحة البائع)
+     */
     public function vendorOrders()
     {
-        // جلب طلبات البائع الحالي مع بيانات الإعلان (listing) والمشتري (buyer)
         $orders = Order::where('seller_id', Auth::id())
-            ->with(['listing', 'buyer']) // تأكد من وجود علاقات listing و buyer في موديل Order
+            ->with(['listing' => function($q) {
+                $q->withTrashed();
+            }, 'buyer'])
             ->latest()
             ->get();
 
         return view('vendor.orders.index', compact('orders'));
     }
-
-
-
-
 }

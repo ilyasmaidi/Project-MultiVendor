@@ -11,58 +11,34 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
-        'buyer_id',
-        'listing_id',
-        'seller_id',
-        'size',
-        'color',
-        'quantity',
-        'total_price',
-        'status',
-        'phone',
-        'city',
-        'shipping_address',
-        'notes',
+        'buyer_id', 'listing_id', 'seller_id', 'size', 'color', 
+        'quantity', 'total_price', 'status', 'phone', 'city'
     ];
 
-    /**
-     * علاقة الطلب بالمشتري
-     */
-    public function buyer(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'buyer_id');
-    }
-
-    /**
-     * علاقة الطلب بالبائع
-     */
-    public function seller(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'seller_id');
-    }
-
-    /**
-     * علاقة الطلب بالمنتج
-     * تم التعديل للإشارة إلى Ad::class بدلاً من Listing
-     */
-    public function listing(): BelongsTo
-    {
-        // نستخدم Ad هنا لأن هذا هو اسم الموديل في مشروعك
+    public function listing(): BelongsTo {
         return $this->belongsTo(Ad::class, 'listing_id');
     }
 
-    /**
-     * دالة مساعدة للحصول على لون الحالة (Status Badge)
-     */
-    public function getStatusColorAttribute()
-    {
+    public function buyer(): BelongsTo {
+        return $this->belongsTo(User::class, 'buyer_id');
+    }
+
+    // خاصية سحرية لتلوين الحالة تلقائياً
+    public function getStatusColorAttribute(): string {
         return match($this->status) {
-            'pending'   => 'zinc-500',
-            'processing'=> 'blue-500',
-            'shipped'   => 'emerald-500',
-            'delivered' => 'emerald-600',
-            'cancelled' => 'red-500',
-            default     => 'zinc-400',
+            'pending'    => 'bg-yellow-100 text-yellow-800 border-yellow-200',
+            'completed'  => 'bg-green-100 text-green-800 border-green-200',
+            'cancelled'  => 'bg-red-100 text-red-800 border-red-200',
+            default      => 'bg-blue-100 text-blue-800 border-blue-200',
+        };
+    }
+
+    public function getStatusLabelAttribute(): string {
+        return match($this->status) {
+            'pending'   => 'انتظار',
+            'completed' => 'مكتمل',
+            'cancelled' => 'ملغي',
+            default     => 'معالجة',
         };
     }
 }

@@ -2,119 +2,83 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
-    AdController,
-    CategoryController,
-    StoreController,
-    DashboardController,
-    MessageController,
-    FavoriteController,
-    NotificationController,
-    SearchController,
-    ProfileController,
-    StoreSetupController,
-    VendorDashboardController,
-    CartController,
-    OrderController,
-    CheckoutController // تأكد من استدعائه هنا
+    AdController, CategoryController, StoreController,
+    DashboardController, MessageController, FavoriteController,
+    NotificationController, SearchController, ProfileController,
+    StoreSetupController, VendorDashboardController, CartController,
+    OrderController, CheckoutController
 };
 use App\Livewire\{Home, AdListing};
+use App\Livewire\Admin\Orders\OrderIndex;
+use App\Livewire\Admin\Orders\OrderShow;
 
-// --- 1. Public Routes ---
+/*
+|--------------------------------------------------------------------------
+| 1. المسارات العامة (Public Routes)
+|--------------------------------------------------------------------------
+*/
 Route::get('/', Home::class)->name('home');
-
-// --- 2. Checkout & Orders Routes (المسارات المضافة والمصلحة) ---
-Route::middleware(['auth'])->group(function () {
-    
-    // مسارات عملية الشراء (Checkout)
-    Route::prefix('checkout')->name('checkout.')->group(function () {
-        // هذا هو المسار الذي كان ناقصاً ويسبب الخطأ
-        Route::get('/', [CheckoutController::class, 'index'])->name('index'); 
-        
-        // مسار حفظ الطلب
-        Route::post('/store', [CheckoutController::class, 'store'])->name('store');
-        
-        // صفحة نجاح الطلب
-        Route::get('/success', [CheckoutController::class, 'success'])->name('success');
-    });
-
-    // مسارات طلبات المشتري
-    Route::get('/my-orders', [CheckoutController::class, 'myOrders'])->name('orders.index');
-
-    // مسارات البائع لإدارة الطلبات
-    Route::prefix('vendor/orders')->name('vendor.orders.')->group(function () {
-        Route::get('/', [CheckoutController::class, 'vendorOrders'])->name('index');
-        Route::patch('/{order}', [CheckoutController::class, 'updateStatus'])->name('update');
-    });
-});
-
-// --- 3. Cart Routes ---
-Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
-Route::post('/cart/add/{id}', [CartController::class, 'add'])->name('cart.add');
-Route::post('/cart/remove/{key}', [CartController::class, 'remove'])->name('cart.remove');
-
-// --- 4. Search & General ---
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
 
-// Categories & Stores
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/stores', [StoreController::class, 'index'])->name('stores.index');
 Route::get('/stores/{slug}', [StoreController::class, 'show'])->name('stores.show');
 
-// Ads Management (ترتيب المسارات هام جداً)
 Route::get('/ads', [AdController::class, 'index'])->name('ads.index');
 Route::get('/category/{slug}', AdListing::class)->name('ads.by-category');
-Route::get('/ads/create/new', [AdController::class, 'create'])->name('ads.create')->middleware('auth'); 
 Route::get('/ads/{slug}', [AdController::class, 'show'])->name('ads.show');
 
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/add/{id}', [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/remove/{key}', [CartController::class, 'remove'])->name('cart.remove');
 
-// --- 5. Authenticated Dashboard & Management ---
+/*
+|--------------------------------------------------------------------------
+| 2. مسارات الأعضاء المسجلين (Authenticated Routes)
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth'])->group(function () {
 
-    // Dashboard
+    // نظام المشتري والطلبات الشخصية
+    Route::prefix('checkout')->name('checkout.')->group(function () {
+        Route::get('/', [CheckoutController::class, 'index'])->name('index');
+        Route::post('/store', [CheckoutController::class, 'store'])->name('store');
+        Route::get('/success', [CheckoutController::class, 'success'])->name('success');
+    });
+    
+    Route::get('/my-orders', [CheckoutController::class, 'myOrders'])->name('orders.index');
+
+    // لوحة التحكم العامة
     Route::prefix('dashboard')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
-        Route::get('/activity', [DashboardController::class, 'activity'])->name('dashboard.activity');
     });
 
-    // Ads CRUD
+    // إدارة الإعلانات والملف الشخصي
     Route::get('/my-ads', [AdController::class, 'myAds'])->name('my-ads');
-    Route::post('/ads', [AdController::class, 'store'])->name('ads.store');
-    Route::get('/ads/{ad}/edit', [AdController::class, 'edit'])->name('ads.edit');
-    Route::put('/ads/{ad}', [AdController::class, 'update'])->name('ads.update');
-    Route::delete('/ads/{ad}', [AdController::class, 'destroy'])->name('ads.destroy');
+    Route::resource('ads', AdController::class)->except(['index', 'show']);
 
-    // Messaging
-    Route::prefix('messages')->group(function () {
-        Route::get('/', [MessageController::class, 'index'])->name('messages.index');
-        Route::get('/conversation', [MessageController::class, 'show'])->name('messages.show');
-        Route::post('/', [MessageController::class, 'store'])->name('messages.store');
-        Route::post('/start/{user}', [MessageController::class, 'start'])->name('messages.start');
-        Route::delete('/{message}', [MessageController::class, 'destroy'])->name('messages.destroy');
+    Route::prefix('messages')->name('messages.')->group(function () {
+        Route::get('/', [MessageController::class, 'index'])->name('index');
+        Route::get('/conversation', [MessageController::class, 'show'])->name('show');
+        Route::post('/', [MessageController::class, 'store'])->name('store');
     });
 
-    // Favorites & Notifications
-    Route::post('/favorites/{ad}', [FavoriteController::class, 'store'])->name('favorites.store');
-    Route::get('/favorites', [FavoriteController::class, 'index'])->name('favorites.index');
-    Route::delete('/favorites/{ad}', [FavoriteController::class, 'destroy'])->name('favorites.destroy');
+    Route::resource('favorites', FavoriteController::class)->only(['index', 'store', 'destroy']);
 
-    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
-    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
-    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
-
-    // Profile Settings
-    Route::prefix('profile')->group(function () {
-        Route::get('/', [ProfileController::class, 'show'])->name('profile');
-        Route::get('/edit', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::put('/', [ProfileController::class, 'update'])->name('profile.update');
-        Route::put('/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
-        Route::put('/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
-        Route::delete('/', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::post('/read-all', [NotificationController::class, 'markAllRead'])->name('read-all');
     });
 
-    // Store Setup
+    Route::prefix('profile')->name('profile')->group(function () {
+        Route::get('/', [ProfileController::class, 'show']);
+        Route::get('/edit', [ProfileController::class, 'edit'])->name('.edit');
+        Route::put('/', [ProfileController::class, 'update'])->name('.update');
+    });
+
+    // إعداد المتجر والتاجر (Vendor)
     Route::prefix('store-setup')->group(function () {
         Route::get('/', [StoreSetupController::class, 'index'])->name('store.setup');
         Route::post('/basic', [StoreSetupController::class, 'storeBasic'])->name('store.setup.basic');
@@ -122,21 +86,42 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/contact', [StoreSetupController::class, 'storeContact'])->name('store.setup.contact');
     });
 
-    // Vendor Panel
-    Route::prefix('vendor')->group(function () {
-        Route::get('/dashboard', [VendorDashboardController::class, 'index'])->name('vendor.dashboard');
-        Route::get('/analytics', [VendorDashboardController::class, 'analytics'])->name('vendor.analytics');
-        Route::get('/ads/manage', [VendorDashboardController::class, 'manageAds'])->name('vendor.ads.manage');
-        Route::get('/store/settings', [VendorDashboardController::class, 'storeSettings'])->name('vendor.store.settings');
-        Route::put('/store', [VendorDashboardController::class, 'updateStore'])->name('vendor.store.update');
+    Route::prefix('vendor')->name('vendor.')->group(function () {
+        Route::get('/dashboard', [VendorDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/analytics', [VendorDashboardController::class, 'analytics'])->name('analytics');
+        Route::get('/store/settings', [VendorDashboardController::class, 'storeSettings'])->name('store.settings');
+        Route::get('/orders', [CheckoutController::class, 'vendorOrders'])->name('orders.index');
+        Route::patch('/orders/{order}', [CheckoutController::class, 'updateStatus'])->name('orders.update');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | 3. مسارات الإدارة العليا (Admin Routes)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('admin')->name('admin.')->group(function () {
+        
+        // نظام إدارة الطلبات المركزي
+        Route::prefix('orders')->name('orders.')->group(function () {
+            Route::get('/', OrderIndex::class)->name('index');
+            Route::get('/{order}', OrderShow::class)->name('show'); 
+        });
+    });
+
 });
 
-// --- 6. Static Pages ---
+
+
+
+/*
+|--------------------------------------------------------------------------
+| 4. صفحات المعلومات (Static Pages)
+|--------------------------------------------------------------------------
+*/
+// تأكد أن الأسماء (->name) تطابق ما يناديه الـ Footer
 Route::view('/help', 'pages.help')->name('help');
+Route::view('/safety', 'pages.safety')->name('safety');
 Route::view('/terms', 'pages.terms')->name('terms');
 Route::view('/privacy', 'pages.privacy')->name('privacy');
-Route::view('/safety', 'pages.safety')->name('safety');
 
-// Auth
 require __DIR__.'/auth.php';
