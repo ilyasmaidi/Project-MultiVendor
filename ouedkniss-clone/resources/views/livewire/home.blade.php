@@ -3,7 +3,7 @@
     @include('components.hero')
 
     {{-- 2. أحدث الإعلانات (Recent Ads Section) --}}
-    <section class="container mx-auto px-4 py-24 relative">
+    <section class="container mx-auto px-4 py-24 relative " id="collections">
         {{-- عنوان القسم بتنسيق عصري --}}
         <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
             <div class="space-y-2">

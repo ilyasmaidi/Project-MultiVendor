@@ -8,8 +8,18 @@
     ];
 
     if(auth()->check()) {
+        $user = auth()->user();
+        
+        // تحديد مسار اللوحة بناءً على النوع لمنع خطأ Route NotFound
+        $dashboardRoute = 'profile.show'; // الافتراضي للمشتري
+        if($user->isAdmin()) {
+            $dashboardRoute = 'dashboard';
+        } elseif($user->isSeller()) {
+            $dashboardRoute = 'vendor.dashboard';
+        }
+
         $userLinks = [
-            ['route' => 'dashboard', 'label' => 'اللوحة', 'icon' => 'fa-chart-line'],
+            ['route' => $dashboardRoute, 'label' => 'اللوحة', 'icon' => 'fa-chart-line'],
             ['route' => 'messages.index', 'label' => 'الرسائل', 'icon' => 'fa-envelope-open-text'],
             ['route' => 'favorites.index', 'label' => 'المفضلة', 'icon' => 'fa-heart'],
             ['route' => 'my-ads', 'label' => 'إعلاناتي', 'icon' => 'fa-boxes-stacked'],

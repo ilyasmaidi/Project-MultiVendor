@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str; // ضروري لتوليد الروابط
 
 class Ad extends Model
 {
@@ -56,26 +57,51 @@ class Ad extends Model
         'featured_until' => 'datetime',
     ];
 
-    // --- Accessors المضافة لدعم واجهة TRICO ---
+    /**
+     * Boot function لمعالجة الأحداث تلقائياً
+     * هذا الجزء يحل مشكلة SQLSTATE[23000] (Duplicate Slug)
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($ad) {
+            // توليد الـ slug من العنوان (يدعم الحروف العربية في النسخ الحديثة)
+            $slug = Str::slug($ad->title);
+            
+            if (empty($slug)) {
+                $slug = 'product-' . time();
+            }
+
+            $originalSlug = $slug;
+            $count = 1;
+
+            // التأكد من أن الـ slug فريد في قاعدة البيانات
+            while (static::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $count++;
+            }
+
+            $ad->slug = $slug;
+        });
+    }
+
+    // --- Accessors المضافة لدعم واجهة TRICO العالمية ---
 
     /**
      * جلب رابط الصورة الأساسية للإعلان
-     * يستخدم العلاقة primaryImage إذا وجدت، وإلا يجلب أول صورة، أو صورة افتراضية
      */
     public function getPrimaryImageUrlAttribute(): string
     {
-        // 1. محاولة جلب الصورة المحددة كأساسية
         if ($this->primaryImage) {
             return asset('storage/' . $this->primaryImage->image_path);
         }
 
-        // 2. محاولة جلب أول صورة مرتبطة بالإعلان
         $firstImage = $this->images()->first();
         if ($firstImage) {
             return asset('storage/' . $firstImage->image_path);
         }
 
-        // 3. صورة افتراضية في حال عدم وجود صور
+        // صورة افتراضية بلمسة تريكو في حال عدم وجود صور
         return 'https://via.placeholder.com/400x600?text=TRICO+Fashion';
     }
 
@@ -84,7 +110,12 @@ class Ad extends Model
      */
     public function getConditionTextAttribute(): string
     {
-        return $this->condition === 'new' ? 'جديد' : 'مستعمل';
+        return match($this->condition) {
+            'new' => 'جديد',
+            'used' => 'مستعمل',
+            'refurbished' => 'مجدد',
+            default => $this->condition
+        };
     }
 
     // --- العلاقات (Relations) ---

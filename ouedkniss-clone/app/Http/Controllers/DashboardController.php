@@ -5,18 +5,22 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Ad;
 use App\Models\Message;
+use App\Models\Order;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Order;
 
 class DashboardController extends Controller
 {
+    /**
+     * الصفحة الرئيسية للوحة التحكم
+     */
     public function index()
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        
-        // Stats
+
+        // 1. الإحصائيات العامة (Stats)
         $stats = [
             'total_ads' => $user->ads()->count(),
             'active_ads' => $user->ads()->where('status', 'active')->count(),
@@ -25,38 +29,38 @@ class DashboardController extends Controller
             'unread_messages' => $user->messages()->whereNull('read_at')->count(),
             'favorites_count' => $user->favorites()->count() ?? 0,
             
-            // إضافة المفتاح المفقود هنا لحل الخطأ
+            // طلبات Trico المعلقة التي وصلت للبائع
             'new_orders_count' => Order::where('seller_id', $user->id)
                                     ->where('status', 'pending')
                                     ->count(),
         ];
-        
-        // Recent ads
+
+        // 2. أحدث الإعلانات (Recent Ads)
         $recentAds = $user->ads()
-            ->with('category', 'images')
+            ->with(['category', 'images'])
             ->latest()
             ->take(5)
             ->get();
-        
-        // Recent messages (جلب الرسائل التي لم تُقرأ بعد)
+
+        // 3. أحدث الرسائل غير المقروءة (Unread Messages)
         $recentMessages = $user->messages()
-            ->with('sender', 'ad')
+            ->with(['sender', 'ad'])
             ->whereNull('read_at')
             ->latest()
             ->take(5)
             ->get();
 
-        // جلب أحدث الطلبات (TRICO Orders) لعرضها في اللوحة
+        // 4. أحدث الطلبات المستلمة (Recent Orders)
         $recentOrders = Order::where('seller_id', $user->id)
             ->with(['listing', 'buyer'])
             ->latest()
             ->take(5)
             ->get();
-        
-        // Recent activity
+
+        // 5. سجل النشاط الأخير (Recent Activity)
         $activity = $this->getRecentActivity($user);
-        
-        // Store stats for vendors
+
+        // 6. إحصائيات المتجر (في حال كان المستخدم "تاجر" ولديه متجر)
         $storeStats = null;
         if ($user->hasStore()) {
             $storeStats = [
@@ -65,23 +69,26 @@ class DashboardController extends Controller
                 'featured_ads' => $user->store->ads()->where('is_featured', true)->count(),
             ];
         }
-        
+
         return view('dashboard.index', compact(
-            'stats', 
-            'recentAds', 
-            'recentMessages', 
-            'recentOrders', // تمرير الطلبات للـ View
+            'stats',
+            'recentAds',
+            'recentMessages',
+            'recentOrders',
             'activity',
             'storeStats'
         ));
     }
-    
+
+    /**
+     * صفحة الإحصائيات التفصيلية والرسوم البيانية
+     */
     public function stats()
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        
-        // Get stats by month for charts
+
+        // جلب إحصائيات آخر 6 أشهر للرسوم البيانية
         $monthlyStats = [];
         for ($i = 5; $i >= 0; $i--) {
             $month = Carbon::now()->subMonths($i);
@@ -97,37 +104,43 @@ class DashboardController extends Controller
                     ->sum('views_count') ?? 0,
             ];
         }
-        
-        // Category breakdown
+
+        // توزيع الإعلانات حسب التصنيفات
         $categoryStats = $user->ads()
             ->selectRaw('category_id, count(*) as count')
             ->with('category:id,name')
             ->groupBy('category_id')
             ->get();
-        
+
         return view('dashboard.stats', compact('monthlyStats', 'categoryStats'));
     }
-    
+
+    /**
+     * عرض سجل النشاط الكامل
+     */
     public function activity()
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $activities = $this->getRecentActivity($user, 50);
-        
+
         return view('dashboard.activity', compact('activities'));
     }
-    
+
+    /**
+     * منطق جلب وترتيب النشاطات (إعلانات، رسائل، إلخ)
+     */
     private function getRecentActivity($user, $limit = 10)
     {
         $activities = [];
-        
-        // Recent ads
+
+        // تحويل أحدث الإعلانات إلى نشاطات
         $ads = $user->ads()
-            ->select('id', 'title', 'slug', 'status', 'created_at', 'updated_at')
+            ->select('id', 'title', 'slug', 'status', 'created_at')
             ->latest()
             ->take($limit)
             ->get();
-        
+
         foreach ($ads as $ad) {
             $activities[] = [
                 'type' => 'ad',
@@ -137,29 +150,29 @@ class DashboardController extends Controller
                 'url' => route('ads.show', $ad->slug),
             ];
         }
-        
-        // Recent messages
+
+        // تحويل أحدث الرسائل إلى نشاطات
         $messages = $user->messages()
             ->with('sender')
             ->latest()
             ->take($limit)
             ->get();
-        
+
         foreach ($messages as $message) {
             $activities[] = [
                 'type' => 'message',
-                'title' => 'رسالة من ' . $message->sender->name,
+                'title' => 'رسالة من ' . ($message->sender->name ?? 'مستخدم'),
                 'status' => $message->read_at ? 'read' : 'unread',
                 'date' => $message->created_at,
                 'url' => route('messages.index'),
             ];
         }
-        
-        // Sort by date
-        usort($activities, function($a, $b) {
+
+        // ترتيب كافة النشاطات تنازلياً حسب التاريخ
+        usort($activities, function ($a, $b) {
             return $b['date'] <=> $a['date'];
         });
-        
+
         return array_slice($activities, 0, $limit);
     }
 }

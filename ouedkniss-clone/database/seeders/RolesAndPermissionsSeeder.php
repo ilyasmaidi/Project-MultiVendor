@@ -6,111 +6,92 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        // 1. إعادة تعيين الكاش الخاص بالصلاحيات (ضروري جداً قبل البدء)
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Create permissions
+        // 2. تعريف الصلاحيات
         $permissions = [
-            // User permissions
-            'view users',
-            'create users',
-            'edit users',
-            'delete users',
-
-            // Store permissions
-            'view stores',
-            'create stores',
-            'edit stores',
-            'delete stores',
-
-            // Ad permissions
-            'view ads',
-            'create ads',
-            'edit ads',
-            'delete ads',
-            'approve ads',
-
-            // Category permissions
-            'view categories',
-            'create categories',
-            'edit categories',
-            'delete categories',
-
-            // Settings permissions
-            'view settings',
-            'edit settings',
-
-            // Staff permissions
-            'manage staff',
-            'view staff',
-
-            // Statistics permissions
+            'view users', 'create users', 'edit users', 'delete users',
+            'view stores', 'create stores', 'edit stores', 'delete stores',
+            'view ads', 'create ads', 'edit ads', 'delete ads', 'approve ads',
+            'view categories', 'create categories', 'edit categories', 'delete categories',
+            'view settings', 'edit settings',
+            'manage staff', 'view staff',
             'view statistics',
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        // Create roles and assign permissions
-        $adminRole = Role::create(['name' => 'admin']);
-        $adminRole->givePermissionTo(Permission::all());
+        // 3. إنشاء الرتب (Roles)
+        // ملاحظة: تأكد أن الأسماء تطابق الـ ENUM في migration المستخدمين
+        $adminRole  = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        $vendorRole = Role::firstOrCreate(['name' => 'vendor', 'guard_name' => 'web']);
+        $staffRole  = Role::firstOrCreate(['name' => 'staff', 'guard_name' => 'web']);
+        $buyerRole  = Role::firstOrCreate(['name' => 'buyer', 'guard_name' => 'web']);
 
-        $vendorRole = Role::create(['name' => 'vendor']);
-        $vendorRole->givePermissionTo([
-            'view stores',
-            'create stores',
-            'edit stores',
-            'view ads',
-            'create ads',
-            'edit ads',
-            'delete ads',
-            'view categories',
-            'manage staff',
-            'view staff',
-            'view statistics',
+        // تعيين الصلاحيات للرتب
+        $adminRole->syncPermissions(Permission::all());
+
+        $vendorRole->syncPermissions([
+            'view stores', 'create stores', 'edit stores',
+            'view ads', 'create ads', 'edit ads', 'delete ads',
+            'view categories', 'manage staff', 'view staff', 'view statistics',
         ]);
 
-        $staffRole = Role::create(['name' => 'staff']);
-        $staffRole->givePermissionTo([
-            'view ads',
-            'create ads',
-            'edit ads',
-            'view stores',
-        ]);
+        $staffRole->syncPermissions(['view ads', 'create ads', 'edit ads', 'view stores']);
+        
+        $buyerRole->syncPermissions(['view ads']);
 
-        $buyerRole = Role::create(['name' => 'buyer']);
-        $buyerRole->givePermissionTo([
-            'view ads',
-        ]);
-
-        // Create default admin user
-        $admin = User::create([
-            'name' => 'Admin',
-            'email' => 'admin@ouedkniss.clone',
-            'password' => bcrypt('password'),
-            'role' => 'admin',
-            'is_active' => true,
-        ]);
+        // 4. إنشاء المستخدمين الافتراضيين (البيانات الأساسية للنظام)
+        
+        // حساب المدير العام (Admin)
+        $admin = User::updateOrCreate(
+            ['phone' => '0550112233'], // البحث برقم الهاتف كونه الفريد الأساسي
+            [
+                'name'      => 'Admin Ilias',
+                'email'     => 'admin@trico.dz',
+                'password'  => Hash::make('password'),
+                'role'      => 'admin', // للحقل العادي في جدول users
+                'is_active' => true,
+            ]
+        );
         $admin->assignRole('admin');
 
-        // Create default vendor user
-        $vendor = User::create([
-            'name' => 'Vendor',
-            'email' => 'vendor@ouedkniss.clone',
-            'password' => bcrypt('password'),
-            'role' => 'vendor',
-            'is_active' => true,
-        ]);
+        // حساب بائع تجريبي (Vendor)
+        $vendor = User::updateOrCreate(
+            ['phone' => '0660112233'],
+            [
+                'name'      => 'Oasis Vendor',
+                'email'     => 'vendor@trico.dz',
+                'password'  => Hash::make('password'),
+                'role'      => 'vendor',
+                'is_active' => true,
+            ]
+        );
         $vendor->assignRole('vendor');
 
-        $this->command->info('Roles and permissions created successfully!');
-        $this->command->info('Admin: admin@ouedkniss.clone / password');
-        $this->command->info('Vendor: vendor@ouedkniss.clone / password');
+        // حساب مشتري تجريبي (Buyer)
+        $buyer = User::updateOrCreate(
+            ['phone' => '0770112233'],
+            [
+                'name'      => 'Test Buyer',
+                'email'     => 'buyer@trico.dz',
+                'password'  => Hash::make('password'),
+                'role'      => 'buyer',
+                'is_active' => true,
+            ]
+        );
+        $buyer->assignRole('buyer');
+
+        $this->command->info('✅ TRICO System: Roles & Permissions Loaded Successfully!');
     }
 }

@@ -9,37 +9,28 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Permission\Traits\HasRoles;
 
-/**
- * @method bool canCreateMoreAds()
- */
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
+     * الحقول القابلة للتعبئة - Mass Assignable
      */
     protected $fillable = [
         'name',
         'email',
-        'password',
         'phone',
+        'password',
+        'role',
         'whatsapp',
         'address',
-        'bio',
         'avatar',
-        'role',
         'is_active',
         'last_login_at',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
+     * الحقول المخفية
      */
     protected $hidden = [
         'password',
@@ -47,9 +38,8 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * تحويل أنواع البيانات (Casting)
+     * ملاحظة: دمجنا كل شيء في الدالة لأنها الأسلوب الأحدث في Laravel 11
      */
     protected function casts(): array
     {
@@ -61,6 +51,11 @@ class User extends Authenticatable
         ];
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | العلاقات (Relations)
+    |--------------------------------------------------------------------------
+    */
     public function store(): HasOne
     {
         return $this->hasOne(Store::class);
@@ -86,13 +81,27 @@ class User extends Authenticatable
         return $this->hasMany(Favorite::class);
     }
 
-    public function isAdmin() {
-    return $this->role === 'admin'; // أو حسب الحقل عندك
-}
+    /*
+    |--------------------------------------------------------------------------
+    | منطق التحقق والأدوار (Roles & Logic)
+    |--------------------------------------------------------------------------
+    */
+    
+    // التحقق من الأدمن
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin' || $this->hasRole('admin');
+    }
 
+    // التحقق من البائع (نستخدم 'vendor' كقيمة أساسية للتوافق مع الـ Migration)
     public function isVendor(): bool
     {
-        return $this->role === 'vendor' || $this->hasRole('vendor');
+        return in_array($this->role, ['vendor', 'seller']) || $this->hasRole('vendor') || $this->hasRole('seller');
+    }
+
+    public function isSeller(): bool
+    {
+        return $this->isVendor();
     }
 
     public function isStaff(): bool
@@ -107,7 +116,7 @@ class User extends Authenticatable
 
     public function hasStore(): bool
     {
-        return $this->store !== null;
+        return $this->store()->exists();
     }
 
     public function canCreateStore(): bool
@@ -125,6 +134,11 @@ class User extends Authenticatable
         return $this->getAdsCount() < 30 || $this->isAdmin();
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | أدوات التصفية والوظائف (Scopes & Helpers)
+    |--------------------------------------------------------------------------
+    */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
@@ -137,8 +151,7 @@ class User extends Authenticatable
 
     public function markLastLogin(): void
     {
+        // تم استخدام update مباشرة لتجاوز مشاكل الـ save في بعض الحالات
         $this->update(['last_login_at' => now()]);
     }
-
-    
 }
